@@ -1,0 +1,17 @@
+baseURL = "https://yoanmarchal.github.io/lotpix/"
+languageCode = "fr-FR"
+defaultContentLanguage = "fr"
+title = "Lotpix — Convertissez, compressez et redimensionnez vos images par lot"
+disableKinds = ["taxonomy", "term", "rss", "sitemap", "section"]
+
+[params]
+  description = "Application de bureau gratuite et open source pour convertir, compresser et redimensionner vos images par lot en WebP, AVIF, JPEG ou PNG. Glisser-déposer, contrôle de la qualité, tout se fait sur votre ordinateur."
+  author = "Yoan Marchal"
+  repo = "yoanmarchal/lotpix"
+  github = "https://github.com/yoanmarchal/lotpix"
+  releases = "https://github.com/yoanmarchal/lotpix/releases/latest"
+  # Version affichée tant que l'API GitHub n'a pas répondu (mise à jour côté client).
+  version = "2.0.0"
+
+[markup.goldmark.renderer]
+  unsafe = true

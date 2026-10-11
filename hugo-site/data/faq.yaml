@@ -1,0 +1,24 @@
+- q: Mes images sont-elles envoyées sur Internet ?
+  a: >-
+    Non. Toute la conversion se fait sur votre ordinateur. Aucune image ne quitte votre machine et aucune donnée d'usage n'est collectée. Le seul accès réseau est la recherche d'une nouvelle version au démarrage, que vous pouvez désactiver.
+- q: Mes fichiers originaux sont-ils modifiés ?
+  a: >-
+    Jamais. Les images converties sont créées à côté des originaux, ou dans le dossier de sortie de votre choix. Rien n'est écrasé non plus : si <code>photo.webp</code> existe déjà, la sortie devient <code>photo-1.webp</code>.
+- q: Quel format choisir ?
+  a: >-
+    <strong>WebP</strong> pour le web, c'est le meilleur compromis. <strong>AVIF</strong> pour les fichiers les plus légers. <strong>JPEG</strong> si l'image doit s'ouvrir partout. <strong>PNG</strong> pour une qualité sans perte avec transparence.
+- q: Quels formats puis-je importer ?
+  a: >-
+    JPEG, PNG, GIF, TIFF et WebP. L'orientation EXIF est appliquée automatiquement et les GIF animés sont conservés en WebP animé.
+- q: Puis-je redimensionner mes images en même temps ?
+  a: >-
+    Oui. Activez « Redimensionner » et choisissez une largeur, une hauteur, un côté le plus long ou un pourcentage : les proportions sont conservées et les dimensions finales de chaque image s'affichent avant la conversion. Avec « Format d'origine », vous pouvez aussi redimensionner sans changer de format.
+- q: J'utilisais Image Converter, que dois-je faire ?
+  a: >-
+    Lotpix est la nouvelle version d'Image Converter, entièrement réécrite. Elle ne s'installe pas par-dessus l'ancienne : désinstallez Image Converter, puis installez Lotpix depuis cette page. L'historique des conversions n'est pas repris.
+- q: Comment mettre à jour l'application ?
+  a: >-
+    L'application affiche un bandeau au démarrage quand une nouvelle version existe. Téléchargez-la depuis cette page ou les releases GitHub, puis installez-la par-dessus l'ancienne.
+- q: Existe-t-il une version macOS ?
+  a: >-
+    Pas encore de version précompilée. Le code est open source sous licence MIT, vous pouvez lancer l'application depuis les sources en suivant le README.
