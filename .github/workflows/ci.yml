@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_PACKAGER_VERSION: 0.11.8
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Ubuntu 22.04 : les binaires restent compatibles avec les glibc plus anciennes
+        os: [windows-latest, ubuntu-22.04]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+
+    - name: Cache Rust build
+      uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+    - name: Check formatting
+      run: cargo fmt --check
+
+    - name: Run Clippy
+      run: cargo clippy --all-targets -- -D warnings
+
+    - name: Run Tests
+      run: cargo test
+
+    - name: Install cargo-packager
+      run: cargo install cargo-packager --locked --version "$CARGO_PACKAGER_VERSION"
+
+    - name: Build installers
+      # On vérifie que le packaging fonctionne aussi, pas seulement la compilation
+      run: |
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          cargo packager --release --formats nsis
+        else
+          cargo packager --release --formats deb,appimage
+        fi
