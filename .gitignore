@@ -1,0 +1,16 @@
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.sw?
+.env
+
+# Rust build output
+target
+
+# Dépendances Node du site (hugo-site)
+node_modules
+
+# Installeurs produits par cargo packager
+release
