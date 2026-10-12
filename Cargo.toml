@@ -16,7 +16,7 @@ image = { version = "0.25", default-features = false, features = ["gif", "jpeg",
 jpeg-encoder = { version = "0.7.1", features = ["simd"] }
 libwebp-sys = "0.9"
 lucide-icons = { version = "1.55.0", features = ["iced"] }
-moxcms = "0.8"
+moxcms = "0.9"
 open = "5.4.4"
 # Sans la fonctionnalité « asm » : elle exige nasm à la compilation
 ravif = { version = "0.13", default-features = false, features = ["threading"] }
