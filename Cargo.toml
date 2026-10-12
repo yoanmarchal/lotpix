@@ -1,6 +1,6 @@
 [package]
 name = "lotpix"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2024"
 description = "Bulk image optimizer : convertit, compresse et redimensionne des images par lot"
 license = "MIT"

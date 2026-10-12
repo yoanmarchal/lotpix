@@ -105,3 +105,16 @@ jobs:
         run: |
           shopt -s nullglob
           gh release upload "$TAG" release/*.exe release/*.deb release/*.AppImage --clobber
+
+  # Le site vit sur la branche gh-pages : son déploiement relit la dernière release publiée
+  update-site:
+    needs: [check-tag, release]
+    if: needs.check-tag.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Redeploy the landing page
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run gh-pages.yml --repo "${{ github.repository }}" --ref gh-pages
