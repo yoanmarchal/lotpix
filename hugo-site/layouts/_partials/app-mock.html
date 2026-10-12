@@ -1,11 +1,11 @@
 {{- /* Reproduction simplifiée de l'interface de l'application (décorative). */ -}}
 {{- $files := slice
-  (dict "name" "vacances-plage.jpg" "from" "4,2 Mo" "to" "812 Ko" "gain" "-81 %" "tint" "from-sky-300 via-cyan-200 to-amber-200" "state" "done")
-  (dict "name" "portrait-studio.png" "from" "6,8 Mo" "to" "1,1 Mo" "gain" "-84 %" "tint" "from-rose-300 via-orange-200 to-amber-100" "state" "done")
-  (dict "name" "logo-anime.gif" "from" "1,9 Mo" "to" "" "gain" "" "tint" "from-violet-400 via-fuchsia-300 to-pink-200" "state" "progress")
-  (dict "name" "montagne.tiff" "from" "22 Mo" "to" "" "gain" "" "tint" "from-emerald-300 via-teal-200 to-sky-200" "state" "queued")
+  (dict "name" "vacances-plage.jpg" "from" "4,2 Mo" "to" "812 Ko" "gain" "-81 %" "dims" "4000×3000 → 1920×1440" "tint" "from-sky-300 via-cyan-200 to-amber-200" "state" "done")
+  (dict "name" "portrait-studio.png" "from" "6,8 Mo" "to" "1,1 Mo" "gain" "-84 %" "dims" "3000×4500 → 1280×1920" "tint" "from-rose-300 via-orange-200 to-amber-100" "state" "done")
+  (dict "name" "logo-anime.gif" "from" "1,9 Mo" "to" "" "gain" "" "dims" "" "tint" "from-violet-400 via-fuchsia-300 to-pink-200" "state" "progress")
+  (dict "name" "montagne.tiff" "from" "22 Mo" "to" "" "gain" "" "dims" "6000×4000 → 1920×1280" "tint" "from-emerald-300 via-teal-200 to-sky-200" "state" "queued")
 -}}
-<figure class="overflow-hidden rounded-2xl bg-white text-left shadow-2xl ring-1 shadow-zinc-900/10 ring-zinc-900/10 dark:bg-zinc-900 dark:shadow-black/40 dark:ring-white/10" role="img" aria-label="Aperçu de l'application : quatre images en cours de conversion vers WebP avec une qualité de 80 %">
+<figure class="overflow-hidden rounded-2xl bg-white text-left shadow-2xl ring-1 shadow-zinc-900/10 ring-zinc-900/10 dark:bg-zinc-900 dark:shadow-black/40 dark:ring-white/10" role="img" aria-label="Aperçu de l'application : quatre images en cours de conversion vers WebP avec une qualité de 80 % et un redimensionnement à 1920 px">
   <div class="flex h-10 items-center gap-2 border-b border-zinc-200 bg-zinc-50 px-4 dark:border-zinc-800 dark:bg-zinc-950/60" aria-hidden="true">
     <span class="size-3 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
     <span class="size-3 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
@@ -33,11 +33,11 @@
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium">{{ .name }}</p>
               {{ if eq .state "done" }}
-                <p class="font-mono text-xs text-zinc-500">{{ .from }} → <span class="text-zinc-900 dark:text-zinc-200">{{ .to }}</span></p>
+                <p class="truncate font-mono text-xs text-zinc-500">{{ .from }} → <span class="text-zinc-900 dark:text-zinc-200">{{ .to }}</span><span class="hidden sm:inline"> · {{ .dims }}</span></p>
               {{ else if eq .state "progress" }}
                 <div class="mt-1.5 h-1.5 w-full max-w-48 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"><div class="h-full w-3/5 rounded-full bg-brand-500"></div></div>
               {{ else }}
-                <p class="font-mono text-xs text-zinc-500">{{ .from }} · en attente</p>
+                <p class="truncate font-mono text-xs text-zinc-500">{{ .from }}<span class="hidden sm:inline"> · {{ .dims }}</span> · en attente</p>
               {{ end }}
             </div>
             {{ if eq .state "done" }}
@@ -69,6 +69,22 @@
           <span class="absolute top-1/2 left-4/5 size-4 -translate-1/2 rounded-full border-[3px] border-white bg-brand-500 shadow dark:border-zinc-900"></span>
         </div>
         <p class="mt-2 text-xs text-zinc-500">Haute qualité, fichier plus grand</p>
+      </div>
+      <div class="space-y-2">
+        <p class="flex items-center gap-2 text-xs font-medium text-zinc-500">
+          {{ partial "icon.html" (dict "name" "scaling" "class" "size-3.5") }} Redimensionner
+          <span class="ml-auto flex h-4 w-7 items-center justify-end rounded-full bg-brand-500 p-0.5"><span class="size-3 rounded-full bg-white"></span></span>
+        </p>
+        <div class="flex items-center justify-between rounded-md bg-white px-3 py-2 text-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-700">
+          Côté le plus long {{ partial "icon.html" (dict "name" "chevron-down" "class" "size-4 text-zinc-400") }}
+        </div>
+        <div class="flex items-center gap-2 text-sm text-zinc-500">
+          <span class="flex-1 rounded-md bg-white px-3 py-2 text-zinc-900 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-white dark:ring-zinc-700">1920</span> px
+        </div>
+        <p class="flex items-center gap-2 text-xs text-zinc-500">
+          <span class="grid size-3.5 shrink-0 place-items-center rounded-sm bg-brand-500 text-white">{{ partial "icon.html" (dict "name" "check" "class" "size-2.5") }}</span>
+          Ne pas agrandir les images plus petites
+        </p>
       </div>
       <div>
         <p class="mb-1.5 text-xs font-medium text-zinc-500">Dossier de sortie</p>

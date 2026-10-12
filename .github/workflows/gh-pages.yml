@@ -49,6 +49,14 @@ jobs:
         working-directory: ./hugo-site
         run: npm ci
 
+      # Version affichée par le site : celle de la dernière release publiée
+      - name: Read the latest release version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh release view --repo "${{ github.repository }}" --json tagName --jq .tagName)
+          echo "HUGO_PARAMS_VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
       - name: Build with Hugo
         working-directory: ./hugo-site
         env:
