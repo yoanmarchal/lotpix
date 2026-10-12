@@ -14,7 +14,7 @@ fast_image_resize = "6"
 iced = { version = "0.14", features = ["image", "tokio"] }
 image = { version = "0.25", default-features = false, features = ["gif", "jpeg", "png", "tiff", "webp"] }
 jpeg-encoder = { version = "0.7.1", features = ["simd"] }
-libwebp-sys = "0.9"
+libwebp-sys = "0.14"
 lucide-icons = { version = "1.55.0", features = ["iced"] }
 moxcms = "0.8"
 open = "5.4.4"
