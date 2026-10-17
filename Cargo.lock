@@ -2095,7 +2095,7 @@ dependencies = [
 
 [[package]]
 name = "lotpix"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "chrono",
  "directories",
@@ -2128,9 +2128,9 @@ checksum = "7f66e8d5d03f609abc3a39e6f08e4164ebf1447a732906d39eb9b99b7919ef39"
 
 [[package]]
 name = "lucide-icons"
-version = "1.55.0"
+version = "1.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15477dff3b89bd25ddbbd9b6855fb1c7055558a296f1d2282a6294b2b37ab458"
+checksum = "5b08b584045b897f3a00f1b4622c1f2db1ba672e9501582357c6a7e46c2ba7bc"
 dependencies = [
  "iced",
 ]
