@@ -1,14 +1,22 @@
 name: Build and Release
 
 on:
+  # Chaque merge dans main publie une release, une fois la CI passée
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   push:
-    branches:
-      - main
     tags:
       - "v*.*.*"
 
 permissions:
   contents: write
+
+# Deux merges rapprochés ne doivent pas calculer la même version
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,6 +24,10 @@ env:
 
 jobs:
   check-tag:
+    # Seulement après une CI réussie sur un push dans main (pas sur une PR)
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     outputs:
       should_release: ${{ steps.check.outputs.should_release }}
@@ -25,9 +37,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Check if release needed
         id: check
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             echo "Triggered by tag ${{ github.ref_name }}"
@@ -36,24 +51,43 @@ jobs:
             exit 0
           fi
 
-          # Triggered by branch push, check Cargo.toml version
-          VERSION=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
-          TAG_NAME="v$VERSION"
-          echo "Detected version: $VERSION"
-          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
-
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Tag $TAG_NAME already exists. No new release."
+          # Un merge plus récent est arrivé : c'est sa CI qui publiera, avec tous les changements
+          if [[ "$(git rev-parse origin/main)" != "$HEAD_SHA" ]]; then
+            echo "main has moved past $HEAD_SHA. Skipping."
             echo "should_release=false" >> $GITHUB_OUTPUT
-          else
-            echo "Tag $TAG_NAME does not exist. Creating it."
-            git config user.name "GitHub Actions"
-            git config user.email "actions@github.com"
-            git tag $TAG_NAME
-            git push origin $TAG_NAME
-            echo "Created and pushed tag $TAG_NAME"
-            echo "should_release=true" >> $GITHUB_OUTPUT
+            exit 0
           fi
+
+          LAST_TAG=$(git describe --tags --abbrev=0 --match 'v*.*.*' 2>/dev/null || true)
+          # La CI, Renovate et la doc ne changent rien pour l'utilisateur
+          if [[ -n "$LAST_TAG" ]] && ! git diff --name-only "$LAST_TAG" HEAD \
+              | grep -qvE '^(\.github/|\.claude/|renovate\.json$|.*\.md$)'; then
+            echo "No app changes since $LAST_TAG. No new release."
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          VERSION=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
+          # Version déjà publiée : on monte le patch. Une version montée à la main est gardée telle quelle
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION"
+            NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+            sed -i "0,/^version = \"$VERSION\"/s//version = \"$NEW_VERSION\"/" Cargo.toml
+            sed -i "/^name = \"lotpix\"$/{n;s/^version = \".*\"/version = \"$NEW_VERSION\"/}" Cargo.lock
+            git commit -am "Release v$NEW_VERSION"
+            git push origin HEAD:main
+            VERSION=$NEW_VERSION
+          fi
+
+          TAG_NAME="v$VERSION"
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME"
+          echo "Created and pushed tag $TAG_NAME"
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "should_release=true" >> $GITHUB_OUTPUT
 
       - name: Create GitHub release
         if: steps.check.outputs.should_release == 'true'
@@ -88,6 +122,9 @@ jobs:
     steps:
       - name: Check out Git repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Le tag inclut le commit de version créé par check-tag
+          ref: ${{ needs.check-tag.outputs.tag }}
 
       - name: Cache Rust build
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
