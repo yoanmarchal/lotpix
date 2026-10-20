@@ -126,6 +126,16 @@ jobs:
           # Le tag inclut le commit de version créé par check-tag
           ref: ${{ needs.check-tag.outputs.tag }}
 
+      # rust-cache met dans sa clé toutes les toolchains installées : sans ce nettoyage, le Rust
+      # préinstallé sur l'image du runner (qui varie d'une machine à l'autre) invalide le cache
+      - name: Keep only the pinned toolchain
+        run: |
+          rustc -V
+          ACTIVE=$(rustup show active-toolchain | cut -d' ' -f1)
+          for TOOLCHAIN in $(rustup toolchain list | cut -d' ' -f1); do
+            [ "$TOOLCHAIN" = "$ACTIVE" ] || rustup toolchain uninstall "$TOOLCHAIN"
+          done
+
       - name: Cache Rust build
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
