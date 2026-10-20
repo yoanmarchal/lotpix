@@ -45,6 +45,8 @@ jobs:
     - name: Cache Rust build
       uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       with:
+        # Partagé avec release.yml (même valeur que l'ancienne clé, basée sur le nom du job)
+        shared-key: build
         # Les PRs relisent le cache de main sans en écrire un : la limite de 10 Go du dépôt n'est plus saturée
         save-if: ${{ github.ref == 'refs/heads/main' }}
 
