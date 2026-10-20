@@ -3,5 +3,19 @@
   "extends": [
     "config:recommended",
     "config:best-practices"
+  ],
+  "packageRules": [
+    {
+      "description": "Cargo.lock fige déjà les versions : pas d'épinglage exact des dev-dependencies",
+      "matchManagers": ["cargo"],
+      "matchDepTypes": ["dev-dependencies"],
+      "rangeStrategy": "auto"
+    },
+    {
+      "description": "À ne monter qu'avec la crate qui les embarque (webp pour libwebp-sys, image pour moxcms), sinon deux versions cohabitent dans le binaire",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["libwebp-sys", "moxcms"],
+      "dependencyDashboardApproval": true
+    }
   ]
 }
