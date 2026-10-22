@@ -50,16 +50,19 @@
   })();
 </script>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400;500&display=swap">
+{{/* Polices auto-hébergées (sous-ensemble latin, OFL) : pas d'origine tierce sur le chemin critique */}}
+{{- $geist := "fonts/geist-latin-wght-normal.woff2" | relURL }}
+<link rel="preload" href="{{ $geist }}" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face { font-family: 'Geist'; font-style: normal; font-weight: 100 900; font-display: swap; src: url({{ $geist }}) format('woff2'); }
+  @font-face { font-family: 'Geist Mono'; font-style: normal; font-weight: 100 900; font-display: swap; src: url({{ "fonts/geist-mono-latin-wght-normal.woff2" | relURL }}) format('woff2'); }
+</style>
 
+{{/* En production, la feuille de style est intégrée à la page pour ne pas bloquer le premier rendu */}}
 {{ with resources.Get "css/main.css" }}
   {{ with . | css.TailwindCSS (dict "minify" hugo.IsProduction) }}
     {{ if hugo.IsProduction }}
-      {{ with . | fingerprint }}
-        <link rel="stylesheet" href="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}" crossorigin="anonymous">
-      {{ end }}
+      <style>{{ .Content | safeCSS }}</style>
     {{ else }}
       <link rel="stylesheet" href="{{ .RelPermalink }}">
     {{ end }}
