@@ -11,9 +11,16 @@ $('[data-theme-toggle]')?.addEventListener('click', () => {
 
 /* ---------- En-tête : fond au défilement ---------- */
 const header = $('[data-header]');
-const onScroll = () => header?.toggleAttribute('data-scrolled', window.scrollY > 8);
-onScroll();
-window.addEventListener('scroll', onScroll, { passive: true });
+// Sentinelle observée plutôt que lecture de scrollY : aucune mise en page forcée.
+if (header && 'IntersectionObserver' in window) {
+  const sentinel = document.createElement('div');
+  sentinel.setAttribute('aria-hidden', 'true');
+  sentinel.style.cssText = 'position:absolute;top:0;left:0;width:1px;height:8px;pointer-events:none';
+  document.body.prepend(sentinel);
+  new IntersectionObserver(([entry]) => {
+    header.toggleAttribute('data-scrolled', !entry.isIntersecting);
+  }).observe(sentinel);
+}
 
 /* ---------- Apparition au défilement ---------- */
 const revealed = $$('[data-reveal]');
@@ -96,7 +103,8 @@ async function loadRelease() {
 
 loadRelease().then((release) => {
   const version = release.tag_name.replace(/^v/, '');
-  $$('[data-version]').forEach((el) => { el.textContent = version; });
+  // Ne réécrit que si la version a changé : un nouveau nœud texte relancerait le LCP.
+  $$('[data-version]').forEach((el) => { if (el.textContent !== version) el.textContent = version; });
 
   const date = release.published_at && new Date(release.published_at);
   const dateEl = $('[data-release-date]');
