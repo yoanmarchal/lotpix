@@ -10,6 +10,7 @@ use super::widgets::{empty_state, separator};
 use super::{App, Message, file_name};
 use crate::format::{format_date, format_file_size, format_percent};
 use crate::history::HistoryItem;
+use crate::t;
 
 // Largeurs relatives des colonnes : fichier, tailles, dimensions, gain, date, actions
 const COLUMNS: [u16; 7] = [4, 2, 2, 5, 2, 4, 2];
@@ -18,21 +19,21 @@ pub fn view(app: &App) -> Element<'_, Message> {
     let tokens = app.tokens;
     let items = app.history.items();
     if items.is_empty() {
-        return empty_state(icon_file_text(), "Aucune conversion pour le moment", tokens);
+        return empty_state(icon_file_text(), t!("history-empty"), tokens);
     }
 
     // La confirmation se fait dans la page : une boîte de dialogue native n'existe pas sur
     // toutes les distributions Linux
     let actions: Element<'_, Message> = if app.is_confirming_clear {
         row![
-            text("Vider tout l'historique ?")
+            text(t!("history-clear-question"))
                 .size(theme::TEXT_SM)
                 .color(tokens.text_secondary),
-            button(text("Annuler").font(theme::FONT_MEDIUM))
+            button(text(t!("history-clear-cancel")).font(theme::FONT_MEDIUM))
                 .padding([theme::SPACE_SM, theme::SPACE_LG])
                 .on_press(Message::ClearHistoryConfirmed(false))
                 .style(move |_, status| theme::outline_button(tokens, status)),
-            button(text("Vider").font(theme::FONT_MEDIUM))
+            button(text(t!("history-clear-confirm")).font(theme::FONT_MEDIUM))
                 .padding([theme::SPACE_SM, theme::SPACE_LG])
                 .on_press(Message::ClearHistoryConfirmed(true))
                 .style(move |_, status| theme::danger_button(tokens, status)),
@@ -44,7 +45,7 @@ pub fn view(app: &App) -> Element<'_, Message> {
         button(
             row![
                 icon_trash_2().size(theme::ICON_MD),
-                text("Vider l'historique").font(theme::FONT_MEDIUM)
+                text(t!("history-clear")).font(theme::FONT_MEDIUM)
             ]
             .spacing(theme::SPACE_SM)
             .align_y(Center),
@@ -56,7 +57,7 @@ pub fn view(app: &App) -> Element<'_, Message> {
     };
 
     let title = row![
-        text("Historique des conversions")
+        text(t!("history-title"))
             .size(theme::TEXT_XL)
             .font(theme::FONT_SEMIBOLD)
             .color(tokens.text),
@@ -65,20 +66,20 @@ pub fn view(app: &App) -> Element<'_, Message> {
     ]
     .align_y(Center);
 
-    let heading = |label: &'static str| -> Element<'_, Message> {
+    let heading = |label: String| -> Element<'_, Message> {
         text(label)
             .size(theme::TEXT_XS)
             .font(theme::FONT_MEDIUM)
             .into()
     };
     let header = container(table_row([
-        heading("FICHIER"),
-        heading("ORIGINE"),
-        heading("CONVERTIE"),
-        heading("DIMENSIONS"),
-        heading("GAIN"),
-        heading("DATE"),
-        heading("ACTIONS"),
+        heading(t!("history-column-file")),
+        heading(t!("history-column-original")),
+        heading(t!("history-column-converted")),
+        heading(t!("history-column-dimensions")),
+        heading(t!("history-column-gain")),
+        heading(t!("history-column-date")),
+        heading(t!("history-column-actions")),
     ]))
     .style(move |_| theme::table_header(tokens));
 

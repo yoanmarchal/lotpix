@@ -1,0 +1,7 @@
+# Traductions Fluent (src/i18n.rs) : un fichier i18n/<langue>/lotpix.ftl par langue.
+# L'anglais sert de référence : la macro fl! refuse de compiler une clé absente de
+# i18n/en/lotpix.ftl, et c'est la langue utilisée quand celle du système n'est pas traduite
+fallback_language = "en"
+
+[fluent]
+assets_dir = "i18n"

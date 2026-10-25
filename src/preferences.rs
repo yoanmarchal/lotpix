@@ -4,6 +4,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::i18n::LanguageChoice;
 use crate::storage;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -12,6 +13,8 @@ pub struct Preferences {
     pub dark_mode: bool,
     /// Interroger GitHub au démarrage pour signaler une nouvelle version.
     pub check_updates: bool,
+    /// Langue de l'interface : celle du système par défaut.
+    pub language: LanguageChoice,
 }
 
 impl Default for Preferences {
@@ -19,6 +22,7 @@ impl Default for Preferences {
         Self {
             dark_mode: false,
             check_updates: true,
+            language: LanguageChoice::System,
         }
     }
 }
@@ -47,6 +51,7 @@ mod tests {
         let saved = Preferences {
             dark_mode: true,
             check_updates: false,
+            language: LanguageChoice::Fixed(crate::i18n::Language::De),
         };
         saved.save(&path).unwrap();
 
@@ -65,5 +70,6 @@ mod tests {
         let loaded = Preferences::load(&path);
         assert!(loaded.dark_mode);
         assert!(loaded.check_updates);
+        assert_eq!(loaded.language, LanguageChoice::System);
     }
 }
