@@ -125,3 +125,97 @@ file-unknown = inconnu
 dialog-choose-images = Choisir des images
 dialog-images-filter = Images
 dialog-choose-output = Choisir le dossier de sortie
+
+## Erreurs de conversion
+
+error-invalid-path = Le chemin du fichier source est invalide ou manquant
+error-unsupported-extension = Extension non supportée : { $extension }
+error-no-extension = (aucune)
+error-source-not-found = Le fichier source n'existe pas : { $path }
+error-not-a-file = Le chemin ne désigne pas un fichier : { $path }
+error-invalid-quality = La qualité doit être un nombre entre 1 et 100
+error-invalid-resize = La taille demandée doit être comprise entre 1 et { $max } { $unit }
+error-too-large = L'image ferait { $width } × { $height } px : le format { $format } est limité à { $max } px de côté
+error-too-many-pixels = L'image ferait { $width } × { $height } px : c'est trop pour être traité (maximum { $max } mégapixels)
+error-empty-output = Le fichier de sortie est vide
+error-decode = Image illisible : { $error }
+error-resize = Échec du redimensionnement : { $error }
+error-encode = Échec de l'encodage : { $error }
+error-resize-buffer = tampon de sortie invalide
+error-webp-config = configuration WebP invalide
+error-webp-version = version de libwebp incompatible
+error-webp-animation = impossible de créer l'encodeur d'animation
+error-webp-dimensions = image aux dimensions inattendues
+error-webp-unknown = erreur inconnue
+
+## Ligne de commande et notifications
+
+cli-usage = Utilisation :
+cli-files = fichiers…
+cli-files-or-folders = fichiers ou dossiers…
+cli-format = format
+cli-size = taille
+cli-help-open = Ouvre l'interface avec ces images
+cli-help-open-gather = Idem, en regroupant les lancements simultanés
+cli-help-compress-format = Compresse avec la qualité recommandée
+cli-help-resize = Redimensionne avec la qualité recommandée
+cli-help-compress-saved = Compresse avec les réglages de l'interface
+cli-help-folders = Les dossiers sont parcourus avec leurs sous-dossiers. Avec --format et --size, les images sont écrites à côté des originales.
+cli-help-formats = Formats :
+cli-help-original-format = format d'origine
+cli-help-sizes = Tailles (les formats des réseaux sociaux sont recadrés au centre et écrits en JPEG) :
+cli-unknown-format = Format inconnu : { $value }
+cli-unknown-size = Taille inconnue : { $value }
+cli-missing-size = Taille manquante : --size <taille>
+report-compressed =
+    { $count ->
+        [one] { $count } image compressée
+       *[other] { $count } images compressées
+    }
+report-resized =
+    { $count ->
+        [one] { $count } image redimensionnée
+       *[other] { $count } images redimensionnées
+    }
+report-failures =
+    { $count ->
+        [one] , { $count } échec
+       *[other] , { $count } échecs
+    }
+report-failure = { $name } : { $error }
+report-impossible = Compression impossible
+report-invalid-saved-resize = La taille de redimensionnement enregistrée est invalide : corrigez-la dans Lotpix
+report-no-images = Aucune image à traiter
+report-supported-formats = Formats pris en charge : JPEG, PNG, GIF, TIFF et WebP
+
+## Tailles du menu contextuel
+
+size-4k = 4K (3840 px)
+size-full-hd = Full HD (1920 px)
+size-hd = HD (1280 px)
+size-web = Web (1024 px)
+size-thumbnail = Miniature (640 px)
+size-half = 50 %
+size-instagram-square = Instagram carré (1080 × 1080)
+size-instagram-portrait = Instagram portrait (1080 × 1350)
+size-story = Story, Reels, TikTok (1080 × 1920)
+size-facebook = Facebook, LinkedIn (1200 × 630)
+size-x = X (1600 × 900)
+size-youtube = Miniature YouTube (1280 × 720)
+size-pinterest = Pinterest (1000 × 1500)
+
+## Menus contextuels des gestionnaires de fichiers (Explorateur Windows, Dolphin, Nemo)
+
+menu-compress = Compresser avec Lotpix
+menu-resize = Redimensionner avec Lotpix
+menu-open = Ouvrir dans Lotpix
+menu-format-webp = WebP
+menu-format-jpg = JPEG
+menu-format-png = PNG (sans perte)
+menu-format-avif = AVIF
+menu-format-original = Format d'origine
+menu-compress-comment = Compresse avec la qualité recommandée, dans le format choisi
+menu-resize-comment = Redimensionne à une taille standard ou au format d'un réseau social
+menu-open-comment = Ouvre les images dans Lotpix pour choisir les réglages
+menu-choose-format = Format, avec la qualité recommandée :
+menu-choose-size = Taille (les formats des réseaux sociaux sont recadrés et écrits en JPEG) :

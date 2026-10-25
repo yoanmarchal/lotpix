@@ -121,3 +121,97 @@ file-unknown = unknown
 dialog-choose-images = Choose images
 dialog-images-filter = Images
 dialog-choose-output = Choose the output folder
+
+## Conversion errors
+
+error-invalid-path = The source file path is invalid or missing
+error-unsupported-extension = Unsupported extension: { $extension }
+error-no-extension = (none)
+error-source-not-found = The source file does not exist: { $path }
+error-not-a-file = The path is not a file: { $path }
+error-invalid-quality = Quality must be a number between 1 and 100
+error-invalid-resize = The requested size must be between 1 and { $max } { $unit }
+error-too-large = The image would be { $width } × { $height } px: the { $format } format is limited to { $max } px per side
+error-too-many-pixels = The image would be { $width } × { $height } px: that is too much to process (maximum { $max } megapixels)
+error-empty-output = The output file is empty
+error-decode = Unreadable image: { $error }
+error-resize = Resizing failed: { $error }
+error-encode = Encoding failed: { $error }
+error-resize-buffer = invalid output buffer
+error-webp-config = invalid WebP configuration
+error-webp-version = incompatible libwebp version
+error-webp-animation = could not create the animation encoder
+error-webp-dimensions = frame with unexpected dimensions
+error-webp-unknown = unknown error
+
+## Command line and notifications
+
+cli-usage = Usage:
+cli-files = files…
+cli-files-or-folders = files or folders…
+cli-format = format
+cli-size = size
+cli-help-open = Opens the interface with these images
+cli-help-open-gather = Same, grouping simultaneous launches
+cli-help-compress-format = Compresses with the recommended quality
+cli-help-resize = Resizes with the recommended quality
+cli-help-compress-saved = Compresses with the interface settings
+cli-help-folders = Folders are processed with their subfolders. With --format and --size, the images are written next to the originals.
+cli-help-formats = Formats:
+cli-help-original-format = original format
+cli-help-sizes = Sizes (social network formats are cropped to the center and saved as JPEG):
+cli-unknown-format = Unknown format: { $value }
+cli-unknown-size = Unknown size: { $value }
+cli-missing-size = Missing size: --size <size>
+report-compressed =
+    { $count ->
+        [one] { $count } image compressed
+       *[other] { $count } images compressed
+    }
+report-resized =
+    { $count ->
+        [one] { $count } image resized
+       *[other] { $count } images resized
+    }
+report-failures =
+    { $count ->
+        [one] , { $count } failure
+       *[other] , { $count } failures
+    }
+report-failure = { $name }: { $error }
+report-impossible = Cannot compress
+report-invalid-saved-resize = The saved resize value is invalid: correct it in Lotpix
+report-no-images = No images to process
+report-supported-formats = Supported formats: JPEG, PNG, GIF, TIFF and WebP
+
+## Sizes of the context menu
+
+size-4k = 4K (3840 px)
+size-full-hd = Full HD (1920 px)
+size-hd = HD (1280 px)
+size-web = Web (1024 px)
+size-thumbnail = Thumbnail (640 px)
+size-half = 50%
+size-instagram-square = Instagram square (1080 × 1080)
+size-instagram-portrait = Instagram portrait (1080 × 1350)
+size-story = Story, Reels, TikTok (1080 × 1920)
+size-facebook = Facebook, LinkedIn (1200 × 630)
+size-x = X (1600 × 900)
+size-youtube = YouTube thumbnail (1280 × 720)
+size-pinterest = Pinterest (1000 × 1500)
+
+## File manager context menus (Windows Explorer, Dolphin, Nemo)
+
+menu-compress = Compress with Lotpix
+menu-resize = Resize with Lotpix
+menu-open = Open in Lotpix
+menu-format-webp = WebP
+menu-format-jpg = JPEG
+menu-format-png = PNG (lossless)
+menu-format-avif = AVIF
+menu-format-original = Original format
+menu-compress-comment = Compresses with the recommended quality, in the chosen format
+menu-resize-comment = Resizes to a standard size or to a social network format
+menu-open-comment = Opens the images in Lotpix to choose the settings
+menu-choose-format = Format, with the recommended quality:
+menu-choose-size = Size (social network formats are cropped and saved as JPEG):

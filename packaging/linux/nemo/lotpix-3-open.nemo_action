@@ -1,6 +1,13 @@
+# Généré par `LOTPIX_UPDATE_MENUS=1 cargo test` (src/context_menu.rs) : ne pas modifier à la main
 [Nemo Action]
-Name=Ouvrir dans Lotpix
-Comment=Ouvre les images dans Lotpix pour choisir les réglages
+Name=Open in Lotpix
+Name[fr]=Ouvrir dans Lotpix
+Name[es]=Abrir en Lotpix
+Name[de]=In Lotpix öffnen
+Comment=Opens the images in Lotpix to choose the settings
+Comment[fr]=Ouvre les images dans Lotpix pour choisir les réglages
+Comment[es]=Abre las imágenes en Lotpix para elegir los ajustes
+Comment[de]=Öffnet die Bilder in Lotpix, um die Einstellungen zu wählen
 Icon-Name=lotpix
 Exec=lotpix open %F
 Selection=notnone

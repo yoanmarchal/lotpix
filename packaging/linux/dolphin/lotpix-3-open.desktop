@@ -1,3 +1,4 @@
+# Généré par `LOTPIX_UPDATE_MENUS=1 cargo test` (src/context_menu.rs) : ne pas modifier à la main
 [Desktop Entry]
 Type=Service
 MimeType=image/jpeg;image/png;image/gif;image/tiff;image/webp;inode/directory;
@@ -5,6 +6,9 @@ Actions=open;
 X-KDE-Priority=TopLevel
 
 [Desktop Action open]
-Name=Ouvrir dans Lotpix
+Name=Open in Lotpix
+Name[fr]=Ouvrir dans Lotpix
+Name[es]=Abrir en Lotpix
+Name[de]=In Lotpix öffnen
 Icon=lotpix
 Exec=lotpix open %F

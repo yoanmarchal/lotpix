@@ -30,6 +30,7 @@
   - Glisser-déposer des images, ou ouverture depuis l'Explorateur (« Ouvrir avec »)
   - Miniatures, suivi de chaque conversion, gain de poids
   - Mode sombre/clair
+  - En français, anglais, espagnol ou allemand : la langue du système par défaut, ou celle choisie dans l'en-tête. Les tailles, pourcentages et dates suivent les conventions de la langue
 
 - 🖱️ **Menu contextuel** (Explorateur Windows, Dolphin, Nemo)
   - Sur des images ou des dossiers (sous-dossiers compris), sans ouvrir de fenêtre, avec la qualité recommandée pour chaque format (WebP 80, JPEG 82, AVIF 65, PNG sans perte). Les fichiers sont écrits à côté des originaux, et une notification résume le gain
@@ -74,6 +75,7 @@ cargo run --release
 - `cargo packager --release --formats nsis` - Construit l'installeur Windows dans `release/`
 - `cargo packager --release --formats deb,appimage` - Construit les paquets Linux dans `release/`
 - `cargo run --release --example compare -- <dossier de sortie> <images…>` - Mesure le temps et le poids de sortie de chaque format
+- `LOTPIX_UPDATE_MENUS=1 cargo test` - Régénère les menus contextuels (bloc NSIS de `Cargo.toml`, fichiers Dolphin et Nemo) après un changement des traductions ou des préréglages ; sans la variable, `cargo test` échoue s'ils ne sont plus à jour
 
 Les deux commandes de packaging demandent `cargo install cargo-packager --locked`.
 
@@ -81,7 +83,9 @@ Les deux commandes de packaging demandent `cargo install cargo-packager --locked
 
 - `src/conversion.rs` - Conversion et redimensionnement, sans dépendance à l'interface
 - `src/history.rs`, `src/preferences.rs`, `src/storage.rs` - Données enregistrées dans le dossier de l'utilisateur
-- `src/format.rs` - Mise en forme française des tailles, pourcentages et dates
+- `src/i18n.rs`, `i18n/<langue>/lotpix.ftl` - Langue de l'application et traductions [Fluent](https://projectfluent.org) ; l'anglais sert de référence, et les traductions espagnole et allemande restent à faire relire
+- `src/format.rs` - Mise en forme des tailles, pourcentages et dates selon la langue
+- `src/presets.rs`, `src/cli.rs`, `src/context_menu.rs` - Préréglages et ligne de commande du menu contextuel, et génération des fichiers de ce menu
 - `src/update.rs` - Recherche d'une version plus récente dans les releases GitHub
 - `src/ui/` - Interface Iced : état et messages (`mod.rs`), thème (`theme.rs`), écrans (`convert.rs`, `history.rs`)
 - `tests/conversion.rs` - Tests de conversion sur de vraies images

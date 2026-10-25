@@ -1,4 +1,5 @@
 // Conversion et redimensionnement d'images, sans dépendance à l'interface (testable avec cargo test)
+use std::fmt;
 use std::fs::{self, File, Metadata, OpenOptions};
 use std::io::{self, BufReader, Cursor, Write};
 use std::path::{Path, PathBuf};
@@ -17,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::animated_webp::AnimatedWebpEncoder;
+use crate::t;
 
 // L'AVIF n'est pas accepté en entrée : il est déjà optimisé, et son décodage imposerait dav1d
 pub const INPUT_EXTENSIONS: [&str; 7] = ["jpg", "jpeg", "png", "gif", "tif", "tiff", "webp"];
@@ -37,43 +39,93 @@ const MAX_PARALLEL_CONVERSIONS: usize = 4;
 const MIN_FRAME_DELAY_MS: u32 = 10;
 const DEFAULT_FRAME_DELAY_MS: u32 = 100;
 
+/// Erreur de conversion. Le message est traduit dans la langue courante au moment où il est
+/// affiché (voir `Display`).
 #[derive(Debug, Error)]
 pub enum ConversionError {
-    #[error("Le chemin du fichier source est invalide ou manquant")]
     InvalidPath,
-    #[error("Extension non supportée : {0}")]
+    /// Extension avec son point (« .bmp »), ou vide pour un fichier sans extension.
     UnsupportedExtension(String),
-    #[error("Le fichier source n'existe pas : {}", .0.display())]
     SourceNotFound(PathBuf),
-    #[error("Le chemin ne désigne pas un fichier : {}", .0.display())]
     NotAFile(PathBuf),
-    #[error("La qualité doit être un nombre entre 1 et 100")]
     InvalidQuality,
-    #[error("La taille demandée doit être comprise entre 1 et {max} {unit}")]
-    InvalidResize { max: u32, unit: &'static str },
-    #[error(
-        "L'image ferait {width} × {height} px : le format {format} est limité à {max} px de côté"
-    )]
+    InvalidResize {
+        max: u32,
+        unit: &'static str,
+    },
     TooLarge {
         width: u32,
         height: u32,
         format: &'static str,
         max: u32,
     },
-    #[error(
-        "L'image ferait {width} × {height} px : c'est trop pour être traité (maximum {max} mégapixels)"
-    )]
-    TooManyPixels { width: u32, height: u32, max: u64 },
-    #[error("Le fichier de sortie est vide")]
+    TooManyPixels {
+        width: u32,
+        height: u32,
+        max: u64,
+    },
     EmptyOutput,
-    #[error("Image illisible : {0}")]
     Decode(#[from] ImageError),
-    #[error("Échec du redimensionnement : {0}")]
     Resize(String),
-    #[error("Échec de l'encodage : {0}")]
     Encode(String),
-    #[error(transparent)]
     Io(#[from] io::Error),
+}
+
+impl fmt::Display for ConversionError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let message = match self {
+            Self::InvalidPath => t!("error-invalid-path"),
+            Self::UnsupportedExtension(extension) if extension.is_empty() => t!(
+                "error-unsupported-extension",
+                extension = t!("error-no-extension")
+            ),
+            Self::UnsupportedExtension(extension) => {
+                t!(
+                    "error-unsupported-extension",
+                    extension = extension.as_str()
+                )
+            }
+            Self::SourceNotFound(path) => {
+                t!("error-source-not-found", path = path.display().to_string())
+            }
+            Self::NotAFile(path) => t!("error-not-a-file", path = path.display().to_string()),
+            Self::InvalidQuality => t!("error-invalid-quality"),
+            Self::InvalidResize { max, unit } => {
+                t!(
+                    "error-invalid-resize",
+                    max = max.to_string(),
+                    unit = unit.to_string()
+                )
+            }
+            // Les nombres sont passés en texte : Fluent les écrirait sinon avec les séparateurs
+            // de milliers, absents des messages d'origine
+            Self::TooLarge {
+                width,
+                height,
+                format,
+                max,
+            } => t!(
+                "error-too-large",
+                width = width.to_string(),
+                height = height.to_string(),
+                format = format.to_string(),
+                max = max.to_string()
+            ),
+            Self::TooManyPixels { width, height, max } => t!(
+                "error-too-many-pixels",
+                width = width.to_string(),
+                height = height.to_string(),
+                max = max.to_string()
+            ),
+            Self::EmptyOutput => t!("error-empty-output"),
+            Self::Decode(error) => t!("error-decode", error = error.to_string()),
+            Self::Resize(error) => t!("error-resize", error = error.as_str()),
+            Self::Encode(error) => t!("error-encode", error = error.as_str()),
+            // Message du système d'exploitation, déjà dans la langue de l'utilisateur
+            Self::Io(error) => return fmt::Display::fmt(error, formatter),
+        };
+        formatter.write_str(&message)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -281,7 +333,7 @@ pub fn assert_image_file(path: &Path) -> Result<Metadata, ConversionError> {
     if !INPUT_EXTENSIONS.contains(&extension.as_str()) {
         return Err(ConversionError::UnsupportedExtension(
             if extension.is_empty() {
-                "(aucune)".to_owned()
+                String::new()
             } else {
                 format!(".{extension}")
             },
@@ -359,7 +411,7 @@ fn resize_with(
         .map_err(|error| resize_error(&error))?;
 
     RgbaImage::from_raw(width, height, target.into_vec())
-        .ok_or_else(|| resize_error(&"tampon de sortie invalide"))
+        .ok_or_else(|| resize_error(&t!("error-resize-buffer")))
 }
 
 fn lanczos() -> ResizeOptions {

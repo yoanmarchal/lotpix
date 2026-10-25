@@ -14,36 +14,63 @@ use crate::format::{format_file_size, format_percent};
 use crate::history::{History, HistoryItem};
 use crate::i18n;
 use crate::preferences::Preferences;
-use crate::presets::{self, Preset, SIZES};
+use crate::presets::{self, Preset, SIZES, Submenu};
 use crate::queue;
 use crate::settings::Settings;
 use crate::storage;
+use crate::t;
 
 fn usage() -> String {
-    let sizes: Vec<String> = SIZES
-        .iter()
-        .map(|size| format!("  {:<20} {}", size.id, size.label))
-        .collect();
-    format!(
-        "\
-Utilisation :
-  lotpix [fichiers…]                       ouvre l'interface avec ces images
-  lotpix open <fichiers ou dossiers…>      idem, en regroupant les lancements simultanés
-  lotpix compress --format <format> <fichiers ou dossiers…>
-                                           compresse avec la qualité recommandée
-  lotpix resize --size <taille> <fichiers ou dossiers…>
-                                           redimensionne avec la qualité recommandée
-  lotpix compress <fichiers ou dossiers…>  compresse avec les réglages de l'interface
+    let files = t!("cli-files");
+    let paths = t!("cli-files-or-folders");
+    let format = t!("cli-format");
+    let size = t!("cli-size");
+    let commands = [
+        (format!("lotpix [{files}]"), t!("cli-help-open")),
+        (format!("lotpix open <{paths}>"), t!("cli-help-open-gather")),
+        (
+            format!("lotpix compress --format <{format}> <{paths}>"),
+            t!("cli-help-compress-format"),
+        ),
+        (
+            format!("lotpix resize --size <{size}> <{paths}>"),
+            t!("cli-help-resize"),
+        ),
+        (
+            format!("lotpix compress <{paths}>"),
+            t!("cli-help-compress-saved"),
+        ),
+    ];
+    let mut lines = vec![t!("cli-usage")];
+    for (command, help) in commands {
+        lines.push(format!("  {command}"));
+        lines.push(format!("      {help}"));
+    }
+    lines.push(String::new());
+    lines.push(t!("cli-help-folders"));
+    lines.push(String::new());
+    lines.push(format!(
+        "{} webp, jpg, png, avif, original ({})",
+        t!("cli-help-formats"),
+        t!("cli-help-original-format")
+    ));
+    lines.push(String::new());
+    lines.push(t!("cli-help-sizes"));
+    lines.extend(
+        SIZES
+            .iter()
+            .map(|size| format!("  {:<20} {}", size.id, size.label())),
+    );
+    lines.join("\n")
+}
 
-Les dossiers sont parcourus avec leurs sous-dossiers. Avec --format et --size, les
-images sont écrites à côté des originales.
-
-Formats : webp, jpg, png, avif, original (format d'origine)
-
-Tailles (les formats des réseaux sociaux sont recadrés au centre et écrits en JPEG) :
-{}",
-        sizes.join("\n")
-    )
+fn menu_choices(submenu: Submenu) -> String {
+    let mut lines = vec![submenu.title(), submenu.prompt()];
+    for (value, label) in submenu.entries() {
+        lines.push(value.to_owned());
+        lines.push(label);
+    }
+    lines.join("\n")
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -59,6 +86,9 @@ pub enum Command {
         preset: Option<Preset>,
     },
     Help,
+    /// Liste de choix d'un sous-menu, pour le script des actions Nemo (packaging/linux/nemo) :
+    /// titre, consigne, puis chaque valeur suivie de son libellé, une ligne chacun.
+    MenuChoices(Submenu),
     /// Arguments incompris : le message à afficher.
     Invalid(String),
 }
@@ -92,19 +122,16 @@ pub fn parse(arguments: impl IntoIterator<Item = OsString>) -> Command {
                 match preset {
                     Some(preset) => Some(preset),
                     None => {
-                        let kind = if name == "compress" {
-                            "Format"
+                        let value = value.to_string_lossy();
+                        return Command::Invalid(if name == "compress" {
+                            t!("cli-unknown-format", value = value.as_ref())
                         } else {
-                            "Taille"
-                        };
-                        return Command::Invalid(format!(
-                            "{kind} inconnu(e) : {}",
-                            value.to_string_lossy()
-                        ));
+                            t!("cli-unknown-size", value = value.as_ref())
+                        });
                     }
                 }
             } else if name == "resize" {
-                return Command::Invalid("Taille manquante : --size <taille>".to_owned());
+                return Command::Invalid(t!("cli-missing-size"));
             } else {
                 None
             };
@@ -121,6 +148,14 @@ pub fn parse(arguments: impl IntoIterator<Item = OsString>) -> Command {
             }
         }
         Some("-h" | "--help") => Command::Help,
+        Some("menu-choices") => {
+            arguments.next();
+            match arguments.next().as_ref().and_then(|kind| kind.to_str()) {
+                Some("compress") => Command::MenuChoices(Submenu::Compress),
+                Some("resize") => Command::MenuChoices(Submenu::Resize),
+                _ => Command::Invalid("menu-choices compress|resize".to_owned()),
+            }
+        }
         _ => Command::Open {
             paths: absolute_paths(arguments),
             gather: false,
@@ -152,6 +187,10 @@ pub fn run(command: Command) -> ExitCode {
     match command {
         Command::Help => {
             println!("{}", usage());
+            ExitCode::SUCCESS
+        }
+        Command::MenuChoices(submenu) => {
+            println!("{}", menu_choices(submenu));
             ExitCode::SUCCESS
         }
         Command::Invalid(message) => {
@@ -239,8 +278,8 @@ fn convert(data_dir: &Path, paths: &[PathBuf], preset: Option<Preset>) -> Report
             let settings = Settings::load(&data_dir.join("settings.json"));
             let Some(options) = settings.options() else {
                 return Report::failure(
-                    "Compression impossible",
-                    "La taille de redimensionnement enregistrée est invalide : corrigez-la dans Lotpix",
+                    &t!("report-impossible"),
+                    &t!("report-invalid-saved-resize"),
                 );
             };
             if jobs.is_empty() {
@@ -249,19 +288,16 @@ fn convert(data_dir: &Path, paths: &[PathBuf], preset: Option<Preset>) -> Report
             batch::convert_all(&jobs, &options)
         }
     };
-    let (singular, plural_form) = match preset {
-        Some(Preset::Resize(_)) => ("image redimensionnée", "images redimensionnées"),
-        _ => ("image compressée", "images compressées"),
-    };
-    let mut report = summarize(data_dir, &jobs, results, singular, plural_form);
+    let resized = matches!(preset, Some(Preset::Resize(_)));
+    let mut report = summarize(data_dir, &jobs, results, resized);
     report.success &= ignored == 0;
     report
 }
 
 fn no_images(ignored: usize) -> Report {
     Report {
-        title: "Aucune image à traiter".to_owned(),
-        body: "Formats pris en charge : JPEG, PNG, GIF, TIFF et WebP".to_owned(),
+        title: t!("report-no-images"),
+        body: t!("report-supported-formats"),
         lines: Vec::new(),
         success: ignored == 0,
     }
@@ -272,8 +308,7 @@ fn summarize(
     data_dir: &Path,
     jobs: &[Job],
     results: Vec<Result<ConversionResult, ConversionError>>,
-    singular: &str,
-    plural_form: &str,
+    resized: bool,
 ) -> Report {
     let mut history = History::load(data_dir.join("history.json"));
     let mut lines = Vec::new();
@@ -294,15 +329,24 @@ fn summarize(
                 let _ = history.add(HistoryItem::new(job.source.clone(), &result, Utc::now()));
             }
             Err(error) => {
-                lines.push(format!("{name} : {error}"));
-                failures.push(format!("{name} : {error}"));
+                let failure = t!(
+                    "report-failure",
+                    name = name.as_str(),
+                    error = error.to_string()
+                );
+                lines.push(failure.clone());
+                failures.push(failure);
             }
         }
     }
 
-    let mut title = plural(converted, singular, plural_form);
+    let mut title = if resized {
+        t!("report-resized", count = converted)
+    } else {
+        t!("report-compressed", count = converted)
+    };
     if !failures.is_empty() {
-        title.push_str(&format!(", {}", plural(failures.len(), "échec", "échecs")));
+        title.push_str(&t!("report-failures", count = failures.len()));
     }
     let body = if converted > 0 {
         let ratio = (1.0 - new_size as f64 / original_size as f64) * 100.0;
@@ -357,10 +401,6 @@ fn file_name(path: &Path) -> String {
         || path.display().to_string(),
         |name| name.to_string_lossy().into_owned(),
     )
-}
-
-fn plural(count: usize, singular: &str, plural: &str) -> String {
-    format!("{count} {}", if count > 1 { plural } else { singular })
 }
 
 #[cfg(test)]
@@ -433,62 +473,54 @@ mod tests {
         );
     }
 
-    /// Chaque commande des menus contextuels (installeur Windows, Dolphin) doit être comprise
-    /// par la ligne de commande, et la liste de choix des actions Nemo doit proposer chaque
-    /// format et chaque taille.
+    /// Chaque entrée des sous-menus contextuels, à partir desquels sont générés les menus de
+    /// Windows, Dolphin et Nemo (src/context_menu.rs), doit être comprise par la ligne de
+    /// commande.
     #[test]
-    fn context_menu_commands_are_valid() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let read = |path: PathBuf| std::fs::read_to_string(path).unwrap();
-        let mut sources = vec![read(root.join("Cargo.toml"))];
-        for entry in std::fs::read_dir(root.join("packaging/linux/dolphin")).unwrap() {
-            sources.push(read(entry.unwrap().path()));
-        }
-
-        let mut checked = 0;
-        for source in &sources {
-            let words: Vec<&str> = source
-                .split(|c: char| c.is_whitespace() || c == '"')
-                .collect();
-            for pair in words.windows(2) {
-                if let ["--format" | "--size", _] = pair {
-                    let command = if pair[0] == "--format" {
-                        "compress"
-                    } else {
-                        "resize"
-                    };
-                    let parsed = parse(arguments(&[command, pair[0], pair[1], "a.png"]));
-                    assert!(
-                        matches!(
-                            parsed,
-                            Command::Convert {
-                                preset: Some(_),
-                                ..
-                            }
-                        ),
-                        "{command} {} {} : {parsed:?}",
-                        pair[0],
-                        pair[1]
-                    );
-                    checked += 1;
-                }
+    fn context_menu_entries_are_valid_commands() {
+        for submenu in [Submenu::Compress, Submenu::Resize] {
+            let entries = submenu.entries();
+            assert!(!entries.is_empty());
+            for (value, _) in entries {
+                let mut command: Vec<&str> = submenu.option().split(' ').collect();
+                command.extend([value, "a.png"]);
+                let parsed = parse(arguments(&command));
+                assert!(
+                    matches!(
+                        parsed,
+                        Command::Convert {
+                            preset: Some(_),
+                            ..
+                        }
+                    ),
+                    "{command:?} : {parsed:?}"
+                );
             }
         }
-        // Formats et tailles de Windows et de Dolphin
-        let menu_entries = 5 + SIZES.len();
-        assert_eq!(checked, 2 * menu_entries, "{checked} commandes trouvées");
+        assert_eq!(Submenu::Resize.entries().len(), SIZES.len());
+    }
 
-        let nemo = read(root.join("packaging/linux/nemo/lotpix-menu.sh"));
-        let ids = ["webp", "jpg", "png", "avif", "original"]
-            .into_iter()
-            .chain(SIZES.iter().map(|size| size.id));
-        for id in ids {
-            assert!(
-                nemo.lines()
-                    .any(|line| line.trim_start().starts_with(&format!("{id} \""))),
-                "{id} absent de la liste Nemo"
-            );
-        }
+    #[test]
+    fn lists_menu_choices_for_the_nemo_script() {
+        i18n::set_language(i18n::Language::En);
+
+        let choices = menu_choices(Submenu::Compress);
+
+        let lines: Vec<&str> = choices.lines().collect();
+        assert_eq!(
+            lines[..4],
+            [
+                "Compress with Lotpix",
+                "Format, with the recommended quality:",
+                "webp",
+                "WebP"
+            ]
+        );
+        assert_eq!(lines.len(), 2 + 2 * 5);
+        assert_eq!(
+            parse(arguments(&["menu-choices", "resize"])),
+            Command::MenuChoices(Submenu::Resize)
+        );
     }
 
     #[test]
@@ -587,5 +619,56 @@ mod tests {
         assert!(report.success);
         let output = dir.path().join("petite.jpg");
         assert_eq!(image::image_dimensions(&output).unwrap(), (400, 400));
+    }
+
+    #[test]
+    fn reports_and_help_follow_the_current_language() {
+        i18n::set_language(i18n::Language::De);
+        let dir = tempfile::tempdir().unwrap();
+        let photo = dir.path().join("a.png");
+        create_image(&photo, 8, 8);
+        let broken = dir.path().join("b.png");
+        std::fs::write(&broken, "pas une image").unwrap();
+
+        let preset = Preset::Compress(FormatChoice::Fixed(OutputFormat::Jpg));
+        let report = convert(dir.path(), &[photo, broken], Some(preset));
+
+        assert_eq!(report.title, "1 Bild komprimiert, 1 Fehler");
+        assert!(
+            report.body.contains("b.png: Bild unlesbar"),
+            "{}",
+            report.body
+        );
+
+        i18n::set_language(i18n::Language::En);
+        let help = usage();
+        assert!(help.starts_with("Usage:"));
+        assert!(help.contains("instagram-square     Instagram square (1080 × 1080)"));
+        assert_eq!(
+            parse(arguments(&["resize", "--size", "géant", "a.png"])),
+            Command::Invalid("Unknown size: géant".to_owned())
+        );
+    }
+
+    #[test]
+    fn conversion_errors_follow_the_current_language() {
+        use crate::conversion::ConversionError;
+
+        let error = ConversionError::UnsupportedExtension(String::new());
+        assert_eq!(error.to_string(), "Extension non supportée : (aucune)");
+
+        i18n::set_language(i18n::Language::Es);
+        assert_eq!(error.to_string(), "Extensión no compatible: (ninguna)");
+        let error = ConversionError::TooLarge {
+            width: 16_384,
+            height: 1,
+            format: "WebP",
+            max: 16_383,
+        };
+        // Les dimensions restent écrites sans séparateur de milliers
+        assert_eq!(
+            error.to_string(),
+            "La imagen mediría 16384 × 1 px: el formato WebP está limitado a 16383 px por lado"
+        );
     }
 }
