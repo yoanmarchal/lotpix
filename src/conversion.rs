@@ -13,6 +13,7 @@ use image::{
     ImageFormat, ImageReader, Limits, RgbImage, RgbaImage,
 };
 use moxcms::{ColorProfile, Layout, TransformOptions};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::animated_webp::AnimatedWebpEncoder;
@@ -29,6 +30,9 @@ pub const MAX_RESIZE_PERCENT: u32 = 400;
 // Un agrandissement au-delà de 512 Mio de pixels RGBA est refusé plutôt que tenté : c'est aussi
 // la limite appliquée au décodage
 const MAX_OUTPUT_PIXELS: u64 = 512 * 1024 * 1024 / 4;
+
+// Une photo de 50 mégapixels décodée occupe 200 Mo, et autant pendant son redimensionnement
+const MAX_PARALLEL_CONVERSIONS: usize = 4;
 
 const MIN_FRAME_DELAY_MS: u32 = 10;
 const DEFAULT_FRAME_DELAY_MS: u32 = 100;
@@ -72,7 +76,8 @@ pub enum ConversionError {
     Io(#[from] io::Error),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum OutputFormat {
     Webp,
     Jpg,
@@ -111,7 +116,8 @@ impl OutputFormat {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum FormatChoice {
     /// Garde le format du fichier source (utile pour seulement redimensionner).
     Original,
@@ -132,7 +138,8 @@ impl FormatChoice {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ResizeMode {
     Width,
     Height,
@@ -180,6 +187,18 @@ pub fn target_dimensions(width: u32, height: u32, resize: &Resize) -> (u32, u32)
     };
     let scaled = |side: u32| ((f64::from(side) * scale).round() as u32).max(1);
     (scaled(width), scaled(height))
+}
+
+/// Nombre de conversions menées de front. Seul l'encodeur AVIF utilise déjà tous les
+/// cœurs ; les autres n'en occupent qu'un, mais chaque image décodée pèse lourd en mémoire.
+pub fn parallel_conversions(format: FormatChoice) -> usize {
+    if format == FormatChoice::Fixed(OutputFormat::Avif) {
+        1
+    } else {
+        std::thread::available_parallelism()
+            .map_or(1, |count| count.get())
+            .min(MAX_PARALLEL_CONVERSIONS)
+    }
 }
 
 #[derive(Debug, Clone)]

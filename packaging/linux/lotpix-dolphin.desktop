@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Service
+MimeType=image/jpeg;image/png;image/gif;image/tiff;image/webp;inode/directory;
+Actions=compress;open;
+X-KDE-Priority=TopLevel
+
+[Desktop Action compress]
+Name=Compresser avec Lotpix
+Icon=lotpix
+Exec=lotpix compress %F
+
+[Desktop Action open]
+Name=Ouvrir dans Lotpix
+Icon=lotpix
+Exec=lotpix open %F

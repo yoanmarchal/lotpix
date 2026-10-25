@@ -17,6 +17,7 @@ jpeg-encoder = { version = "0.7.1", features = ["simd"] }
 libwebp-sys = "0.9"
 lucide-icons = { version = "1.55.0", features = ["iced"] }
 moxcms = "0.8"
+notify-rust = "4.18.2"
 open = "5.4.4"
 # Sans la fonctionnalité « asm » : elle exige nasm à la compilation
 ravif = { version = "0.13", default-features = false, features = ["threading"] }
@@ -64,3 +65,49 @@ icons = [
 [package.metadata.packager.nsis]
 installer-icon = "assets/icons/icon.ico"
 languages = ["French", "English"]
+# Menu contextuel de l'Explorateur, sur les images, les dossiers et le fond d'un dossier.
+# Les entrées classiques apparaissent sous « Afficher plus d'options » dans Windows 11.
+# MultiSelectModel = Player lève la limite de 15 fichiers sélectionnés ; Windows lance alors
+# un processus par fichier, que l'application regroupe (src/queue.rs)
+preinstall-section = '''
+!macro LotpixVerb KEY VERB LABEL MODE ARGUMENT
+  WriteRegStr SHCTX "Software\Classes\${KEY}\shell\${VERB}" "MUIVerb" "${LABEL}"
+  WriteRegStr SHCTX "Software\Classes\${KEY}\shell\${VERB}" "Icon" "$\"$INSTDIR\${MAINBINARYNAME}.exe$\",0"
+  WriteRegStr SHCTX "Software\Classes\${KEY}\shell\${VERB}" "MultiSelectModel" "Player"
+  WriteRegStr SHCTX "Software\Classes\${KEY}\shell\${VERB}\command" "" "$\"$INSTDIR\${MAINBINARYNAME}.exe$\" ${MODE} $\"${ARGUMENT}$\""
+!macroend
+
+!macro LotpixMenu KEY ARGUMENT
+  !insertmacro LotpixVerb "${KEY}" "Lotpix.Compress" "Compresser avec Lotpix" "compress" "${ARGUMENT}"
+  !insertmacro LotpixVerb "${KEY}" "Lotpix.Open" "Ouvrir dans Lotpix" "open" "${ARGUMENT}"
+!macroend
+
+!macro LotpixMenuRemove KEY _ARGUMENT
+  DeleteRegKey SHCTX "Software\Classes\${KEY}\shell\Lotpix.Compress"
+  DeleteRegKey SHCTX "Software\Classes\${KEY}\shell\Lotpix.Open"
+!macroend
+
+!macro LotpixMenus MACRO
+  !insertmacro ${MACRO} "SystemFileAssociations\.jpg" "%1"
+  !insertmacro ${MACRO} "SystemFileAssociations\.jpeg" "%1"
+  !insertmacro ${MACRO} "SystemFileAssociations\.png" "%1"
+  !insertmacro ${MACRO} "SystemFileAssociations\.gif" "%1"
+  !insertmacro ${MACRO} "SystemFileAssociations\.tif" "%1"
+  !insertmacro ${MACRO} "SystemFileAssociations\.tiff" "%1"
+  !insertmacro ${MACRO} "SystemFileAssociations\.webp" "%1"
+  !insertmacro ${MACRO} "Directory" "%1"
+  !insertmacro ${MACRO} "Directory\Background" "%V"
+!macroend
+
+Section ContextMenu
+  !insertmacro LotpixMenus LotpixMenu
+SectionEnd
+
+Section un.ContextMenu
+  !insertmacro LotpixMenus LotpixMenuRemove
+SectionEnd
+'''
+
+# Menus contextuels de Dolphin (KDE) et de Nemo (Cinnamon)
+[package.metadata.packager.deb]
+files = { "packaging/linux/lotpix-dolphin.desktop" = "/usr/share/kio/servicemenus/lotpix.desktop", "packaging/linux/lotpix-compress.nemo_action" = "/usr/share/nemo/actions/lotpix-compress.nemo_action", "packaging/linux/lotpix-open.nemo_action" = "/usr/share/nemo/actions/lotpix-open.nemo_action" }

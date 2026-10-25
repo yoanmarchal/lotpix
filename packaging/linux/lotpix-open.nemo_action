@@ -1,0 +1,7 @@
+[Nemo Action]
+Name=Ouvrir dans Lotpix
+Comment=Ouvre les images dans Lotpix pour choisir les réglages
+Icon-Name=lotpix
+Exec=lotpix open %F
+Selection=notnone
+Mimetypes=image/jpeg;image/png;image/gif;image/tiff;image/webp;inode/directory;

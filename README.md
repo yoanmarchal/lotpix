@@ -31,6 +31,12 @@
   - Miniatures, suivi de chaque conversion, gain de poids
   - Mode sombre/clair
 
+- 🖱️ **Menu contextuel** (Explorateur Windows, Dolphin, Nemo)
+  - « Compresser avec Lotpix » sur des images ou des dossiers (sous-dossiers compris), sans ouvrir de fenêtre : les derniers réglages choisis dans l'interface sont appliqués, et une notification résume le gain
+  - « Ouvrir dans Lotpix » pour changer les réglages avant de convertir
+  - Avec un dossier de sortie, l'arborescence des dossiers compressés y est recréée
+  - En ligne de commande : `lotpix compress <fichiers ou dossiers…>`
+
 - 📊 **Historique des conversions**
   - Les 100 dernières conversions, avec poids et dimensions avant et après
   - Accès rapide aux fichiers convertis

@@ -96,6 +96,7 @@ fn sample_images() -> Vec<ImageEntry> {
         id,
         name: name.to_owned(),
         path: PathBuf::from(format!("{SAMPLE_DIR}/{name}")),
+        subdir: PathBuf::new(),
         size,
         dimensions,
         thumbnail: thumbnail((id * 60) as u8),

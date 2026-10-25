@@ -1,8 +1,12 @@
 mod animated_webp;
+pub mod batch;
+pub mod cli;
 pub mod conversion;
 pub mod format;
 pub mod history;
 pub mod preferences;
+mod queue;
+pub mod settings;
 pub mod storage;
 pub mod ui;
 pub mod update;
