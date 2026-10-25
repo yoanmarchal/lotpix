@@ -1,21 +1,18 @@
-# Formats de sortie proposés par l'application (voir OutputFormat dans src/conversion.rs)
+# Output formats offered by the application (see OutputFormat in src/conversion.rs). The texts
+# are in i18n/<language>.yaml: format-<id>-tagline, format-<id>-body and the tag-<id> tags
 - ext: WebP
-  tagline: Le meilleur rapport qualité/taille
-  body: Le format du web moderne. Des fichiers bien plus légers qu'en JPEG, avec transparence, et vos GIF animés restent animés.
-  tags: [Qualité réglable, Transparence, Animation]
+  id: webp
+  tags: [adjustable-quality, transparency, animation]
   accent: from-brand-400 to-brand-600
 - ext: AVIF
-  tagline: Format moderne haute performance
-  body: La compression la plus poussée pour des images toujours plus légères, idéale quand chaque kilo-octet compte.
-  tags: [Qualité réglable, Transparence]
+  id: avif
+  tags: [adjustable-quality, transparency]
   accent: from-violet-400 to-violet-600
 - ext: JPEG
-  tagline: Compatible partout
-  body: S'ouvre sur n'importe quel appareil ou logiciel. La transparence est remplacée par un fond blanc propre.
-  tags: [Qualité réglable, Universel]
+  id: jpeg
+  tags: [adjustable-quality, universal]
   accent: from-amber-400 to-orange-500
 - ext: PNG
-  tagline: Sans perte, avec transparence
-  body: Chaque pixel est conservé à l'identique. Parfait pour les captures d'écran, logos et illustrations.
-  tags: [Sans perte, Transparence]
+  id: png
+  tags: [lossless, transparency]
   accent: from-sky-400 to-blue-600

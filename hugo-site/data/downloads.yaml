@@ -1,34 +1,31 @@
-# Chaque entrée est reliée à un fichier de la dernière release GitHub par `match`
-# (expression régulière testée sur le nom de l'asset dans assets/js/main.js).
+# Each entry is linked to a file of the latest GitHub release by `match` (regular expression
+# tested on the asset name in assets/js/main.js). The texts are in i18n/<language>.yaml:
+# download-<system>-requirements, download-<system>-note and the `label` keys
 windows:
   name: Windows
-  requirements: Windows 10 ou plus récent · x64
-  note: L'application signale les nouvelles versions.
   files:
     - id: win-x64
-      label: Installateur .exe
+      label: download-installer
       arch: x64
       match: 'setup.*\.exe$'
       primary: true
 linux:
   name: Linux
-  requirements: Ubuntu 22.04+ ou équivalent · x64 et arm64
-  note: Nouvelle version à installer depuis cette page.
   files:
     - id: deb-x64
-      label: Paquet .deb
+      label: download-deb
       arch: x64
       match: '(amd64|x86_64|x64)\.deb$'
       primary: true
     - id: deb-arm64
-      label: Paquet .deb
+      label: download-deb
       arch: arm64
       match: '(arm64|aarch64)\.deb$'
     - id: appimage-x64
-      label: AppImage
+      label: download-appimage
       arch: x64
       match: '(amd64|x86_64|x64)\.AppImage$'
     - id: appimage-arm64
-      label: AppImage
+      label: download-appimage
       arch: arm64
       match: '(arm64|aarch64)\.AppImage$'

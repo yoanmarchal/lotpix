@@ -1,17 +1,42 @@
 baseURL = "https://yoanmarchal.github.io/lotpix/"
-languageCode = "fr-FR"
-defaultContentLanguage = "fr"
-title = "Lotpix — Convertissez, compressez et redimensionnez vos images par lot"
+# English at the root, the other languages under /fr/, /es/ and /de/
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = false
 disableKinds = ["taxonomy", "term", "rss", "sitemap", "section"]
 
 [params]
-  description = "Application de bureau gratuite et open source pour convertir, compresser et redimensionner vos images par lot en WebP, AVIF, JPEG ou PNG. Glisser-déposer, contrôle de la qualité, tout se fait sur votre ordinateur."
   author = "Yoan Marchal"
   repo = "yoanmarchal/lotpix"
   github = "https://github.com/yoanmarchal/lotpix"
   releases = "https://github.com/yoanmarchal/lotpix/releases/latest"
-  # Version affichée tant que l'API GitHub n'a pas répondu (mise à jour côté client).
+  # Version shown until the GitHub API answers (updated client-side).
   version = "2.0.0"
+
+# Titles and descriptions are in i18n/<language>.yaml; `ogLocale` feeds the Open Graph tags
+[languages.en]
+  languageName = "English"
+  languageCode = "en"
+  weight = 1
+  [languages.en.params]
+    ogLocale = "en_US"
+[languages.fr]
+  languageName = "Français"
+  languageCode = "fr-FR"
+  weight = 2
+  [languages.fr.params]
+    ogLocale = "fr_FR"
+[languages.es]
+  languageName = "Español"
+  languageCode = "es-ES"
+  weight = 3
+  [languages.es.params]
+    ogLocale = "es_ES"
+[languages.de]
+  languageName = "Deutsch"
+  languageCode = "de-DE"
+  weight = 4
+  [languages.de.params]
+    ogLocale = "de_DE"
 
 [markup.goldmark.renderer]
   unsafe = true

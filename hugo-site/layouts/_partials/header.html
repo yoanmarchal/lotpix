@@ -1,27 +1,46 @@
 <header data-header class="fixed inset-x-0 top-0 z-40 border-b border-transparent transition-colors duration-300 data-[scrolled]:border-zinc-200/70 data-[scrolled]:bg-white/75 data-[scrolled]:backdrop-blur-xl dark:data-[scrolled]:border-zinc-800/70 dark:data-[scrolled]:bg-zinc-950/70">
-  <nav class="container-page flex h-16 items-center justify-between gap-4" aria-label="Navigation principale">
+  <nav class="container-page flex h-16 items-center justify-between gap-4" aria-label="{{ T "nav-main" }}">
     <a href="#top" class="flex items-center gap-2.5 font-semibold tracking-tight">
       {{ partial "logo.html" (dict "class" "size-8") }}
       <span>Lotpix</span>
     </a>
 
     <ul class="hidden items-center gap-1 text-sm text-zinc-600 md:flex dark:text-zinc-400">
-      {{ range slice (slice "Fonctionnalités" "#fonctionnalites") (slice "Formats" "#formats") (slice "Télécharger" "#telecharger") (slice "FAQ" "#faq") }}
+      {{ range slice (slice (T "nav-features") "#features") (slice (T "nav-formats") "#formats") (slice (T "nav-download") "#download") (slice (T "nav-faq") "#faq") }}
         <li><a href="{{ index . 1 }}" class="rounded-full px-3 py-2 transition hover:text-zinc-900 dark:hover:text-white">{{ index . 0 }}</a></li>
       {{ end }}
     </ul>
 
     <div class="flex items-center gap-1.5">
-      <button type="button" data-theme-toggle class="grid size-9 place-items-center rounded-full text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white" aria-label="Basculer le thème clair / sombre">
+      {{/* Language selector: a native drop-down, usable without JavaScript; the script remembers the choice */}}
+      <details data-language-menu class="group relative">
+        <summary class="flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-full px-2.5 text-sm text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white" aria-label="{{ T "language" }}">
+          {{ partial "icon.html" (dict "name" "languages" "class" "size-[18px]") }}
+          <span class="font-mono text-xs uppercase">{{ site.Language.Lang }}</span>
+        </summary>
+        <ul class="absolute right-0 mt-2 w-40 overflow-hidden rounded-2xl bg-white py-1 text-sm shadow-xl ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+          {{ range .AllTranslations }}
+            {{ $current := eq .Language.Lang site.Language.Lang }}
+            <li>
+              <a href="{{ .RelPermalink }}" hreflang="{{ .Language.Lang }}" lang="{{ .Language.Lang }}" data-lang="{{ .Language.Lang }}"{{ if $current }} aria-current="page"{{ end }}
+                 class="flex items-center justify-between px-4 py-2 transition hover:bg-zinc-50 dark:hover:bg-zinc-800 {{ if $current }}font-medium text-zinc-900 dark:text-white{{ else }}text-zinc-600 dark:text-zinc-400{{ end }}">
+                {{ .Language.LanguageName }}
+                {{ if $current }}{{ partial "icon.html" (dict "name" "check" "class" "size-4 text-brand-500") }}{{ end }}
+              </a>
+            </li>
+          {{ end }}
+        </ul>
+      </details>
+      <button type="button" data-theme-toggle class="grid size-9 place-items-center rounded-full text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white" aria-label="{{ T "theme-toggle" }}">
         {{ partial "icon.html" (dict "name" "moon" "class" "size-[18px] dark:hidden") }}
         {{ partial "icon.html" (dict "name" "sun" "class" "hidden size-[18px] dark:block") }}
       </button>
-      <a href="{{ site.Params.github }}" class="grid size-9 place-items-center rounded-full text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white" aria-label="Code source sur GitHub">
+      <a href="{{ site.Params.github }}" class="grid size-9 place-items-center rounded-full text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white" aria-label="{{ T "source-on-github" }}">
         {{ partial "icon.html" (dict "name" "github" "class" "size-[18px]") }}
       </a>
-      <a href="#telecharger" class="btn btn-primary ml-1 hidden px-4 py-2 sm:inline-flex">
+      <a href="#download" class="btn btn-primary ml-1 hidden px-4 py-2 sm:inline-flex">
         {{ partial "icon.html" (dict "name" "download" "class" "size-4") }}
-        Télécharger
+        {{ T "nav-download" }}
       </a>
     </div>
   </nav>

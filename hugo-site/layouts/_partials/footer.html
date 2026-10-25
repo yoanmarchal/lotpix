@@ -2,15 +2,15 @@
   <div class="container-page flex flex-col items-center justify-between gap-6 py-10 text-sm text-zinc-500 sm:flex-row">
     <div class="flex items-center gap-3">
       {{ partial "logo.html" (dict "class" "size-7") }}
-      <p>© {{ now.Year }} {{ site.Params.author }} · Licence MIT</p>
+      <p>© {{ now.Year }} {{ site.Params.author }} · {{ T "footer-license" }}</p>
     </div>
     <ul class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
       <li><a href="{{ site.Params.github }}" class="transition hover:text-zinc-900 dark:hover:text-white">GitHub</a></li>
-      <li><a href="{{ site.Params.github }}/releases" class="transition hover:text-zinc-900 dark:hover:text-white">Versions</a></li>
-      <li><a href="{{ site.Params.github }}/issues" class="transition hover:text-zinc-900 dark:hover:text-white">Signaler un problème</a></li>
-      <li><a href="{{ site.Params.github }}/blob/main/LICENSE" class="transition hover:text-zinc-900 dark:hover:text-white">Licence</a></li>
-      <li><a href="#signature" class="transition hover:text-zinc-900 dark:hover:text-white">Code signing policy</a></li>
-      <li><a href="#confidentialite" class="transition hover:text-zinc-900 dark:hover:text-white">Confidentialité</a></li>
+      <li><a href="{{ site.Params.github }}/releases" class="transition hover:text-zinc-900 dark:hover:text-white">{{ T "footer-releases" }}</a></li>
+      <li><a href="{{ site.Params.github }}/issues" class="transition hover:text-zinc-900 dark:hover:text-white">{{ T "footer-report" }}</a></li>
+      <li><a href="{{ site.Params.github }}/blob/main/LICENSE" class="transition hover:text-zinc-900 dark:hover:text-white">{{ T "footer-license-link" }}</a></li>
+      <li><a href="#code-signing-policy" class="transition hover:text-zinc-900 dark:hover:text-white">Code signing policy</a></li>
+      <li><a href="#privacy" class="transition hover:text-zinc-900 dark:hover:text-white">{{ T "privacy-title" }}</a></li>
     </ul>
   </div>
 </footer>

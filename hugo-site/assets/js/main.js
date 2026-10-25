@@ -3,15 +3,30 @@ import params from '@params';
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-/* ---------- Thème clair / sombre ---------- */
+// Texts in the language of the page (layouts/baseof.html), and its locale for numbers and dates
+const t = JSON.parse($('#i18n')?.textContent || '{}');
+const locale = document.documentElement.lang || 'en';
+const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');
+
+/* ---------- Light / dark theme ---------- */
 $('[data-theme-toggle]')?.addEventListener('click', () => {
   const dark = document.documentElement.classList.toggle('dark');
-  try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch { /* stockage indisponible */ }
+  try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch { /* storage unavailable */ }
 });
 
-/* ---------- En-tête : fond au défilement ---------- */
+/* ---------- Language: the choice is kept for the next visits (see layouts/_partials/head.html) ---------- */
+$$('[data-lang]').forEach((link) => link.addEventListener('click', () => {
+  try { localStorage.setItem('lang', link.dataset.lang); } catch { /* storage unavailable */ }
+}));
+// The menu closes when clicking elsewhere
+document.addEventListener('click', (event) => {
+  const menu = $('[data-language-menu]');
+  if (menu?.open && !menu.contains(event.target)) menu.open = false;
+});
+
+/* ---------- Header: background while scrolling ---------- */
 const header = $('[data-header]');
-// Sentinelle observée plutôt que lecture de scrollY : aucune mise en page forcée.
+// A sentinel is observed rather than reading scrollY: no forced layout.
 if (header && 'IntersectionObserver' in window) {
   const sentinel = document.createElement('div');
   sentinel.setAttribute('aria-hidden', 'true');
@@ -22,7 +37,7 @@ if (header && 'IntersectionObserver' in window) {
   }).observe(sentinel);
 }
 
-/* ---------- Apparition au défilement ---------- */
+/* ---------- Reveal while scrolling ---------- */
 const revealed = $$('[data-reveal]');
 if ('IntersectionObserver' in window) {
   const io = new IntersectionObserver((entries) => {
@@ -37,7 +52,7 @@ if ('IntersectionObserver' in window) {
   revealed.forEach((el) => el.classList.add('is-visible'));
 }
 
-/* ---------- Démo du réglage de qualité (mêmes libellés que l'application) ---------- */
+/* ---------- Demo of the quality setting (same labels as the application) ---------- */
 const demo = $('[data-quality-demo]');
 if (demo) {
   const range = $('input[type=range]', demo);
@@ -51,12 +66,11 @@ if (demo) {
     const lossless = format === 'png';
     range.disabled = lossless;
     range.style.setProperty('--fill', `${q}%`);
-    value.textContent = lossless ? '100 %' : `${q} %`;
-    hint.textContent = lossless
-      ? "Le PNG est sans perte : la qualité ne s'applique pas"
-      : q < 30 ? 'Qualité basse, fichier plus petit'
-      : q < 70 ? 'Qualité équilibrée'
-      : 'Haute qualité, fichier plus grand';
+    value.textContent = fill(t.percent, { value: lossless ? 100 : q });
+    hint.textContent = lossless ? t.qualityLossless
+      : q < 30 ? t.qualityLow
+      : q < 70 ? t.qualityBalanced
+      : t.qualityHigh;
   };
 
   range.addEventListener('input', render);
@@ -68,7 +82,7 @@ if (demo) {
   render();
 }
 
-/* ---------- Détection du système ---------- */
+/* ---------- System detection ---------- */
 function detectOS() {
   const platform = (navigator.userAgentData?.platform || navigator.platform || '').toLowerCase();
   const ua = navigator.userAgent.toLowerCase();
@@ -87,11 +101,11 @@ if (os) {
   card?.setAttribute('data-current', '');
   $('[data-current-badge]', card)?.classList.remove('hidden');
   const label = $('[data-primary-label]');
-  if (label) label.textContent = `Télécharger pour ${OS_LABEL[os]}`;
+  if (label) label.textContent = fill(t.downloadFor, { os: OS_LABEL[os] });
 }
 
-/* ---------- Liens directs vers la dernière release GitHub ---------- */
-const formatSize = (bytes) => `${(bytes / 1024 / 1024).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} Mo`;
+/* ---------- Direct links to the latest GitHub release ---------- */
+const formatSize = (bytes) => `${(bytes / 1024 / 1024).toLocaleString(locale, { maximumFractionDigits: 0 })} ${t.unitMb}`;
 
 async function loadRelease() {
   const res = await fetch(`https://api.github.com/repos/${params.repo}/releases/latest`, {
@@ -103,12 +117,16 @@ async function loadRelease() {
 
 loadRelease().then((release) => {
   const version = release.tag_name.replace(/^v/, '');
-  // Ne réécrit que si la version a changé : un nouveau nœud texte relancerait le LCP.
+  // Only rewritten if the version changed: a new text node would restart the LCP.
   $$('[data-version]').forEach((el) => { if (el.textContent !== version) el.textContent = version; });
 
   const date = release.published_at && new Date(release.published_at);
   const dateEl = $('[data-release-date]');
-  if (date && dateEl) dateEl.textContent = `, publiée le ${date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  if (date && dateEl) {
+    dateEl.textContent = fill(t.published, {
+      date: date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }),
+    });
+  }
 
   const assetUrls = {};
   $$('[data-asset]').forEach((link) => {
@@ -122,7 +140,7 @@ loadRelease().then((release) => {
     assetUrls[link.dataset.asset] = asset.browser_download_url;
   });
 
-  // Le bouton principal télécharge directement le bon fichier quand le système est reconnu.
+  // The main button downloads the right file directly when the system is recognized.
   const primary = $('[data-primary-download]');
   const url = os && assetUrls[PRIMARY[os]];
   if (primary && url) {
@@ -130,16 +148,16 @@ loadRelease().then((release) => {
     const meta = $('[data-primary-meta]');
     if (meta) {
       meta.innerHTML = '';
-      meta.append(`v${version} · ${os === 'windows' ? 'Installateur .exe · x64' : 'Paquet .deb · x64'} · `);
+      meta.append(`v${version} · ${os === 'windows' ? t.windowsMeta : t.linuxMeta} · `);
       const other = Object.assign(document.createElement('a'), {
-        href: '#telecharger',
-        textContent: 'Autres plateformes',
+        href: '#download',
+        textContent: t.otherPlatforms,
         className: 'underline decoration-zinc-400/50 underline-offset-4 hover:text-zinc-900 dark:hover:text-white',
       });
       meta.append(other);
     }
   }
 }).catch((err) => {
-  // Les liens restent pointés vers la page des releases.
-  console.warn('Release GitHub indisponible :', err);
+  // The links keep pointing to the releases page.
+  console.warn('GitHub release unavailable:', err);
 });

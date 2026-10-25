@@ -1,26 +1,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ site.Title }}</title>
-<meta name="description" content="{{ site.Params.description }}">
+<title>{{ T "site-title" }}</title>
+<meta name="description" content="{{ T "site-description" }}">
 <meta name="author" content="{{ site.Params.author }}">
 <meta name="google-site-verification" content="MY5Wj6CrcKy00mtqhMeoPt9q4X1s401oLCPk-7aK1E4">
 <link rel="canonical" href="{{ .Permalink }}">
+{{/* Each language version points to the others; English is the default for other languages */}}
+{{- range .AllTranslations }}
+<link rel="alternate" hreflang="{{ .Language.Lang }}" href="{{ .Permalink }}">
+{{- end }}
+{{- with .Sites.Default.Home }}
+<link rel="alternate" hreflang="x-default" href="{{ .Permalink }}">
+{{- end }}
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml">
 
 {{- $og := "og.png" | absURL }}
 <meta property="og:type" content="website">
-<meta property="og:locale" content="fr_FR">
+<meta property="og:locale" content="{{ site.Language.Params.ogLocale }}">
+{{- range .Translations }}
+<meta property="og:locale:alternate" content="{{ .Language.Params.ogLocale }}">
+{{- end }}
 <meta property="og:url" content="{{ .Permalink }}">
-<meta property="og:title" content="{{ site.Title }}">
-<meta property="og:description" content="{{ site.Params.description }}">
+<meta property="og:title" content="{{ T "site-title" }}">
+<meta property="og:description" content="{{ T "site-description" }}">
 <meta property="og:image" content="{{ $og }}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{ site.Title }}">
-<meta name="twitter:description" content="{{ site.Params.description }}">
+<meta name="twitter:title" content="{{ T "site-title" }}">
+<meta name="twitter:description" content="{{ T "site-description" }}">
 <meta name="twitter:image" content="{{ $og }}">
 
 <script type="application/ld+json">
@@ -28,7 +38,8 @@
   "@context" "https://schema.org"
   "@type" "SoftwareApplication"
   "name" "Lotpix"
-  "description" site.Params.description
+  "description" (T "site-description")
+  "inLanguage" site.Language.LanguageCode
   "applicationCategory" "MultimediaApplication"
   "operatingSystem" "Windows, Linux"
   "softwareVersion" site.Params.version
@@ -39,7 +50,7 @@
   | jsonify | safeJS }}
 </script>
 
-{{/* Appliqué avant le rendu pour éviter un flash de thème */}}
+{{/* Applied before rendering to avoid a theme flash */}}
 <script>
   (function () {
     var d = document.documentElement;
@@ -50,7 +61,33 @@
   })();
 </script>
 
-{{/* Polices auto-hébergées (sous-ensemble latin, OFL) : pas d'origine tierce sur le chemin critique */}}
+{{- /* On the English root page only: the first visit goes to the browser language if it is
+  translated, then the language chosen in the selector is kept. A shared link to /fr/, /es/
+  or /de/ always opens in its own language. */}}
+{{- if eq site.Language.Lang site.Sites.Default.Language.Lang }}
+{{- $pages := dict }}
+{{- range .AllTranslations }}{{ $pages = merge $pages (dict .Language.Lang .RelPermalink) }}{{ end }}
+<script>
+  (function () {
+    var pages = {{ $pages | jsonify | safeJS }};
+    var chosen = null;
+    try { chosen = localStorage.getItem('lang'); } catch (e) {}
+    var target = chosen;
+    if (!target) {
+      var preferred = navigator.languages || [navigator.language || ''];
+      for (var i = 0; i < preferred.length && !target; i++) {
+        var code = (preferred[i] || '').toLowerCase().split('-')[0];
+        if (pages[code]) target = code;
+      }
+    }
+    if (target && target !== {{ site.Language.Lang }} && pages[target]) {
+      location.replace(pages[target] + location.hash);
+    }
+  })();
+</script>
+{{- end }}
+
+{{/* Self-hosted fonts (latin subset, OFL): no third-party origin on the critical path */}}
 {{- $geist := "fonts/geist-latin-wght-normal.woff2" | relURL }}
 <link rel="preload" href="{{ $geist }}" as="font" type="font/woff2" crossorigin>
 <style>
@@ -58,7 +95,7 @@
   @font-face { font-family: 'Geist Mono'; font-style: normal; font-weight: 100 900; font-display: swap; src: url({{ "fonts/geist-mono-latin-wght-normal.woff2" | relURL }}) format('woff2'); }
 </style>
 
-{{/* En production, la feuille de style est intégrée à la page pour ne pas bloquer le premier rendu */}}
+{{/* In production, the style sheet is inlined in the page so as not to block the first render */}}
 {{ with resources.Get "css/main.css" }}
   {{ with . | css.TailwindCSS (dict "minify" hugo.IsProduction) }}
     {{ if hugo.IsProduction }}
