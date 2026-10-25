@@ -1,0 +1,41 @@
+<section id="signature" class="pb-24 sm:pb-32">
+  <div class="container-page grid gap-12 lg:grid-cols-[1fr_2fr]">
+    <div data-reveal>
+      <p class="eyebrow">Code signing policy</p>
+      <h2 class="section-title">Politique de signature</h2>
+      <p class="section-lead">
+        Free code signing provided by
+        <a href="https://about.signpath.io" class="font-medium text-brand-600 underline decoration-brand-600/30 underline-offset-4 hover:decoration-brand-600 dark:text-brand-400">SignPath.io</a>,
+        certificate by
+        <a href="https://signpath.org" class="font-medium text-brand-600 underline decoration-brand-600/30 underline-offset-4 hover:decoration-brand-600 dark:text-brand-400">SignPath Foundation</a>.
+      </p>
+    </div>
+    <div data-reveal class="space-y-8 text-zinc-600 dark:text-zinc-400 [&_a]:font-medium [&_a]:text-brand-600 [&_a]:underline [&_a]:decoration-brand-600/30 [&_a]:underline-offset-4 dark:[&_a]:text-brand-400 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:text-zinc-900 dark:[&_h3]:text-white [&_strong]:font-medium [&_strong]:text-zinc-900 dark:[&_strong]:text-white [&_code]:rounded [&_code]:bg-zinc-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-sm dark:[&_code]:bg-zinc-800">
+      <div>
+        <h3>Ce qui est signé</h3>
+        <p>
+          L'application Windows (<code>lotpix.exe</code>) et son installeur sont compilés et signés par le
+          <a href="{{ site.Params.github }}/blob/main/.github/workflows/release.yml">workflow de release</a>
+          GitHub Actions, uniquement à partir du code de ce dépôt. Chaque signature est validée à la main avant d'être appliquée.
+          Les versions publiées avant la mise en place de la signature ne sont pas signées.
+        </p>
+      </div>
+      <div>
+        <h3>Équipe</h3>
+        <ul class="space-y-1">
+          <li><strong>Auteurs et relecteurs :</strong> <a href="https://github.com/yoanmarchal">Yoan Marchal</a></li>
+          <li><strong>Approbateurs des signatures :</strong> <a href="https://github.com/yoanmarchal">Yoan Marchal</a></li>
+        </ul>
+      </div>
+      <div id="confidentialite">
+        <h3>Confidentialité</h3>
+        <p>
+          Lotpix traite les images sur votre ordinateur : aucune image, aucun nom de fichier ni aucune donnée d'usage n'est envoyé.
+          Le seul accès réseau est la recherche d'une nouvelle version au démarrage, qui interroge l'API des releases GitHub ;
+          elle se désactive par la case « Vérifier les mises à jour » en bas de la fenêtre. Cette requête est soumise à la
+          <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">politique de confidentialité de GitHub</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
