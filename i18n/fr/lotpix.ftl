@@ -203,3 +203,19 @@ size-facebook = Facebook, LinkedIn (1200 × 630)
 size-x = X (1600 × 900)
 size-youtube = Miniature YouTube (1280 × 720)
 size-pinterest = Pinterest (1000 × 1500)
+
+## Menus contextuels des gestionnaires de fichiers (Explorateur Windows, Dolphin, Nemo)
+
+menu-compress = Compresser avec Lotpix
+menu-resize = Redimensionner avec Lotpix
+menu-open = Ouvrir dans Lotpix
+menu-format-webp = WebP
+menu-format-jpg = JPEG
+menu-format-png = PNG (sans perte)
+menu-format-avif = AVIF
+menu-format-original = Format d'origine
+menu-compress-comment = Compresse avec la qualité recommandée, dans le format choisi
+menu-resize-comment = Redimensionne à une taille standard ou au format d'un réseau social
+menu-open-comment = Ouvre les images dans Lotpix pour choisir les réglages
+menu-choose-format = Format, avec la qualité recommandée :
+menu-choose-size = Taille (les formats des réseaux sociaux sont recadrés et écrits en JPEG) :

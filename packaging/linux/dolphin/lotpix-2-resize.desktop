@@ -1,8 +1,12 @@
+# Généré par `LOTPIX_UPDATE_MENUS=1 cargo test` (src/context_menu.rs) : ne pas modifier à la main
 [Desktop Entry]
 Type=Service
 MimeType=image/jpeg;image/png;image/gif;image/tiff;image/webp;inode/directory;
 Actions=4k;full-hd;hd;web;thumbnail;half;instagram-square;instagram-portrait;story;facebook;x;youtube;pinterest;
-X-KDE-Submenu=Redimensionner avec Lotpix
+X-KDE-Submenu=Resize with Lotpix
+X-KDE-Submenu[fr]=Redimensionner avec Lotpix
+X-KDE-Submenu[es]=Redimensionar con Lotpix
+X-KDE-Submenu[de]=Mit Lotpix skalieren
 X-KDE-Priority=TopLevel
 Icon=lotpix
 
@@ -23,23 +27,35 @@ Name=Web (1024 px)
 Exec=lotpix resize --size web %F
 
 [Desktop Action thumbnail]
-Name=Miniature (640 px)
+Name=Thumbnail (640 px)
+Name[fr]=Miniature (640 px)
+Name[es]=Miniatura (640 px)
+Name[de]=Miniatur (640 px)
 Exec=lotpix resize --size thumbnail %F
 
 [Desktop Action half]
-Name=50 %
+Name=50%
+Name[fr]=50 %
+Name[es]=50 %
+Name[de]=50 %
 Exec=lotpix resize --size half %F
 
 [Desktop Action instagram-square]
-Name=Instagram carré (1080 × 1080)
+Name=Instagram square (1080 × 1080)
+Name[fr]=Instagram carré (1080 × 1080)
+Name[es]=Instagram cuadrado (1080 × 1080)
+Name[de]=Instagram quadratisch (1080 × 1080)
 Exec=lotpix resize --size instagram-square %F
 
 [Desktop Action instagram-portrait]
 Name=Instagram portrait (1080 × 1350)
+Name[es]=Instagram vertical (1080 × 1350)
+Name[de]=Instagram Hochformat (1080 × 1350)
 Exec=lotpix resize --size instagram-portrait %F
 
 [Desktop Action story]
 Name=Story, Reels, TikTok (1080 × 1920)
+Name[es]=Stories, Reels, TikTok (1080 × 1920)
 Exec=lotpix resize --size story %F
 
 [Desktop Action facebook]
@@ -51,7 +67,10 @@ Name=X (1600 × 900)
 Exec=lotpix resize --size x %F
 
 [Desktop Action youtube]
-Name=Miniature YouTube (1280 × 720)
+Name=YouTube thumbnail (1280 × 720)
+Name[fr]=Miniature YouTube (1280 × 720)
+Name[es]=Miniatura de YouTube (1280 × 720)
+Name[de]=YouTube-Vorschaubild (1280 × 720)
 Exec=lotpix resize --size youtube %F
 
 [Desktop Action pinterest]

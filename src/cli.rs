@@ -14,7 +14,7 @@ use crate::format::{format_file_size, format_percent};
 use crate::history::{History, HistoryItem};
 use crate::i18n;
 use crate::preferences::Preferences;
-use crate::presets::{self, Preset, SIZES};
+use crate::presets::{self, Preset, SIZES, Submenu};
 use crate::queue;
 use crate::settings::Settings;
 use crate::storage;
@@ -64,6 +64,15 @@ fn usage() -> String {
     lines.join("\n")
 }
 
+fn menu_choices(submenu: Submenu) -> String {
+    let mut lines = vec![submenu.title(), submenu.prompt()];
+    for (value, label) in submenu.entries() {
+        lines.push(value.to_owned());
+        lines.push(label);
+    }
+    lines.join("\n")
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Command {
     /// Ouvre l'interface avec ces fichiers ou dossiers.
@@ -77,6 +86,9 @@ pub enum Command {
         preset: Option<Preset>,
     },
     Help,
+    /// Liste de choix d'un sous-menu, pour le script des actions Nemo (packaging/linux/nemo) :
+    /// titre, consigne, puis chaque valeur suivie de son libellé, une ligne chacun.
+    MenuChoices(Submenu),
     /// Arguments incompris : le message à afficher.
     Invalid(String),
 }
@@ -136,6 +148,14 @@ pub fn parse(arguments: impl IntoIterator<Item = OsString>) -> Command {
             }
         }
         Some("-h" | "--help") => Command::Help,
+        Some("menu-choices") => {
+            arguments.next();
+            match arguments.next().as_ref().and_then(|kind| kind.to_str()) {
+                Some("compress") => Command::MenuChoices(Submenu::Compress),
+                Some("resize") => Command::MenuChoices(Submenu::Resize),
+                _ => Command::Invalid("menu-choices compress|resize".to_owned()),
+            }
+        }
         _ => Command::Open {
             paths: absolute_paths(arguments),
             gather: false,
@@ -167,6 +187,10 @@ pub fn run(command: Command) -> ExitCode {
     match command {
         Command::Help => {
             println!("{}", usage());
+            ExitCode::SUCCESS
+        }
+        Command::MenuChoices(submenu) => {
+            println!("{}", menu_choices(submenu));
             ExitCode::SUCCESS
         }
         Command::Invalid(message) => {
@@ -449,62 +473,54 @@ mod tests {
         );
     }
 
-    /// Chaque commande des menus contextuels (installeur Windows, Dolphin) doit être comprise
-    /// par la ligne de commande, et la liste de choix des actions Nemo doit proposer chaque
-    /// format et chaque taille.
+    /// Chaque entrée des sous-menus contextuels, à partir desquels sont générés les menus de
+    /// Windows, Dolphin et Nemo (src/context_menu.rs), doit être comprise par la ligne de
+    /// commande.
     #[test]
-    fn context_menu_commands_are_valid() {
-        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let read = |path: PathBuf| std::fs::read_to_string(path).unwrap();
-        let mut sources = vec![read(root.join("Cargo.toml"))];
-        for entry in std::fs::read_dir(root.join("packaging/linux/dolphin")).unwrap() {
-            sources.push(read(entry.unwrap().path()));
-        }
-
-        let mut checked = 0;
-        for source in &sources {
-            let words: Vec<&str> = source
-                .split(|c: char| c.is_whitespace() || c == '"')
-                .collect();
-            for pair in words.windows(2) {
-                if let ["--format" | "--size", _] = pair {
-                    let command = if pair[0] == "--format" {
-                        "compress"
-                    } else {
-                        "resize"
-                    };
-                    let parsed = parse(arguments(&[command, pair[0], pair[1], "a.png"]));
-                    assert!(
-                        matches!(
-                            parsed,
-                            Command::Convert {
-                                preset: Some(_),
-                                ..
-                            }
-                        ),
-                        "{command} {} {} : {parsed:?}",
-                        pair[0],
-                        pair[1]
-                    );
-                    checked += 1;
-                }
+    fn context_menu_entries_are_valid_commands() {
+        for submenu in [Submenu::Compress, Submenu::Resize] {
+            let entries = submenu.entries();
+            assert!(!entries.is_empty());
+            for (value, _) in entries {
+                let mut command: Vec<&str> = submenu.option().split(' ').collect();
+                command.extend([value, "a.png"]);
+                let parsed = parse(arguments(&command));
+                assert!(
+                    matches!(
+                        parsed,
+                        Command::Convert {
+                            preset: Some(_),
+                            ..
+                        }
+                    ),
+                    "{command:?} : {parsed:?}"
+                );
             }
         }
-        // Formats et tailles de Windows et de Dolphin
-        let menu_entries = 5 + SIZES.len();
-        assert_eq!(checked, 2 * menu_entries, "{checked} commandes trouvées");
+        assert_eq!(Submenu::Resize.entries().len(), SIZES.len());
+    }
 
-        let nemo = read(root.join("packaging/linux/nemo/lotpix-menu.sh"));
-        let ids = ["webp", "jpg", "png", "avif", "original"]
-            .into_iter()
-            .chain(SIZES.iter().map(|size| size.id));
-        for id in ids {
-            assert!(
-                nemo.lines()
-                    .any(|line| line.trim_start().starts_with(&format!("{id} \""))),
-                "{id} absent de la liste Nemo"
-            );
-        }
+    #[test]
+    fn lists_menu_choices_for_the_nemo_script() {
+        i18n::set_language(i18n::Language::En);
+
+        let choices = menu_choices(Submenu::Compress);
+
+        let lines: Vec<&str> = choices.lines().collect();
+        assert_eq!(
+            lines[..4],
+            [
+                "Compress with Lotpix",
+                "Format, with the recommended quality:",
+                "webp",
+                "WebP"
+            ]
+        );
+        assert_eq!(lines.len(), 2 + 2 * 5);
+        assert_eq!(
+            parse(arguments(&["menu-choices", "resize"])),
+            Command::MenuChoices(Submenu::Resize)
+        );
     }
 
     #[test]

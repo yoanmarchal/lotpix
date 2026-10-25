@@ -69,13 +69,17 @@ icons = [
 
 [package.metadata.packager.nsis]
 installer-icon = "assets/icons/icon.ico"
-languages = ["French", "English"]
-# Menu contextuel de l'Explorateur, sur les images, les dossiers et le fond d'un dossier :
-# « Compresser avec Lotpix » et « Redimensionner avec Lotpix » ouvrent un sous-menu, avec
-# les réglages recommandés (src/presets.rs) ; « Ouvrir dans Lotpix » ouvre l'interface.
-# Les entrées classiques apparaissent sous « Afficher plus d'options » dans Windows 11.
-# MultiSelectModel = Player lève la limite de 15 fichiers sélectionnés ; Windows lance alors
-# un processus par fichier, que l'application regroupe (src/queue.rs)
+# La première langue sert quand celle du système n'est pas dans la liste
+languages = ["English", "French", "Spanish", "German"]
+# cargo-packager ne traduit pas ses propres messages en allemand
+custom-language-file = { German = "packaging/windows/German.nsh" }
+# Début du menu contextuel de l'Explorateur. Généré par `LOTPIX_UPDATE_MENUS=1 cargo test` (src/context_menu.rs) : ne pas modifier à la main.
+# « Compresser avec Lotpix » et « Redimensionner avec Lotpix » ouvrent un sous-menu, avec les
+# réglages recommandés (src/presets.rs) ; « Ouvrir dans Lotpix » ouvre l'interface. Les libellés
+# sont écrits dans la langue de l'installation. Les entrées classiques apparaissent sous
+# « Afficher plus d'options » dans Windows 11. MultiSelectModel = Player lève la limite de
+# 15 fichiers sélectionnés ; Windows lance alors un processus par fichier, que l'application
+# regroupe (src/queue.rs)
 preinstall-section = '''
 !macro LotpixCommand KEY LABEL ARGUMENTS ARGUMENT
   WriteRegStr SHCTX "${KEY}" "MUIVerb" "${LABEL}"
@@ -96,36 +100,121 @@ preinstall-section = '''
   DeleteRegKey SHCTX "Software\Classes\${CLASS}\shell\Lotpix.Open"
 !macroend
 
+; Libellés dans la langue de l'installation
+LangString lotpix_compress ${LANG_ENGLISH} "Compress with Lotpix"
+LangString lotpix_compress ${LANG_FRENCH} "Compresser avec Lotpix"
+LangString lotpix_compress ${LANG_SPANISH} "Comprimir con Lotpix"
+LangString lotpix_compress ${LANG_GERMAN} "Mit Lotpix komprimieren"
+LangString lotpix_resize ${LANG_ENGLISH} "Resize with Lotpix"
+LangString lotpix_resize ${LANG_FRENCH} "Redimensionner avec Lotpix"
+LangString lotpix_resize ${LANG_SPANISH} "Redimensionar con Lotpix"
+LangString lotpix_resize ${LANG_GERMAN} "Mit Lotpix skalieren"
+LangString lotpix_open ${LANG_ENGLISH} "Open in Lotpix"
+LangString lotpix_open ${LANG_FRENCH} "Ouvrir dans Lotpix"
+LangString lotpix_open ${LANG_SPANISH} "Abrir en Lotpix"
+LangString lotpix_open ${LANG_GERMAN} "In Lotpix öffnen"
+LangString lotpix_compress_webp ${LANG_ENGLISH} "WebP"
+LangString lotpix_compress_webp ${LANG_FRENCH} "WebP"
+LangString lotpix_compress_webp ${LANG_SPANISH} "WebP"
+LangString lotpix_compress_webp ${LANG_GERMAN} "WebP"
+LangString lotpix_compress_jpg ${LANG_ENGLISH} "JPEG"
+LangString lotpix_compress_jpg ${LANG_FRENCH} "JPEG"
+LangString lotpix_compress_jpg ${LANG_SPANISH} "JPEG"
+LangString lotpix_compress_jpg ${LANG_GERMAN} "JPEG"
+LangString lotpix_compress_png ${LANG_ENGLISH} "PNG (lossless)"
+LangString lotpix_compress_png ${LANG_FRENCH} "PNG (sans perte)"
+LangString lotpix_compress_png ${LANG_SPANISH} "PNG (sin pérdida)"
+LangString lotpix_compress_png ${LANG_GERMAN} "PNG (verlustfrei)"
+LangString lotpix_compress_avif ${LANG_ENGLISH} "AVIF"
+LangString lotpix_compress_avif ${LANG_FRENCH} "AVIF"
+LangString lotpix_compress_avif ${LANG_SPANISH} "AVIF"
+LangString lotpix_compress_avif ${LANG_GERMAN} "AVIF"
+LangString lotpix_compress_original ${LANG_ENGLISH} "Original format"
+LangString lotpix_compress_original ${LANG_FRENCH} "Format d'origine"
+LangString lotpix_compress_original ${LANG_SPANISH} "Formato original"
+LangString lotpix_compress_original ${LANG_GERMAN} "Originalformat"
+LangString lotpix_resize_4k ${LANG_ENGLISH} "4K (3840 px)"
+LangString lotpix_resize_4k ${LANG_FRENCH} "4K (3840 px)"
+LangString lotpix_resize_4k ${LANG_SPANISH} "4K (3840 px)"
+LangString lotpix_resize_4k ${LANG_GERMAN} "4K (3840 px)"
+LangString lotpix_resize_full_hd ${LANG_ENGLISH} "Full HD (1920 px)"
+LangString lotpix_resize_full_hd ${LANG_FRENCH} "Full HD (1920 px)"
+LangString lotpix_resize_full_hd ${LANG_SPANISH} "Full HD (1920 px)"
+LangString lotpix_resize_full_hd ${LANG_GERMAN} "Full HD (1920 px)"
+LangString lotpix_resize_hd ${LANG_ENGLISH} "HD (1280 px)"
+LangString lotpix_resize_hd ${LANG_FRENCH} "HD (1280 px)"
+LangString lotpix_resize_hd ${LANG_SPANISH} "HD (1280 px)"
+LangString lotpix_resize_hd ${LANG_GERMAN} "HD (1280 px)"
+LangString lotpix_resize_web ${LANG_ENGLISH} "Web (1024 px)"
+LangString lotpix_resize_web ${LANG_FRENCH} "Web (1024 px)"
+LangString lotpix_resize_web ${LANG_SPANISH} "Web (1024 px)"
+LangString lotpix_resize_web ${LANG_GERMAN} "Web (1024 px)"
+LangString lotpix_resize_thumbnail ${LANG_ENGLISH} "Thumbnail (640 px)"
+LangString lotpix_resize_thumbnail ${LANG_FRENCH} "Miniature (640 px)"
+LangString lotpix_resize_thumbnail ${LANG_SPANISH} "Miniatura (640 px)"
+LangString lotpix_resize_thumbnail ${LANG_GERMAN} "Miniatur (640 px)"
+LangString lotpix_resize_half ${LANG_ENGLISH} "50%"
+LangString lotpix_resize_half ${LANG_FRENCH} "50 %"
+LangString lotpix_resize_half ${LANG_SPANISH} "50 %"
+LangString lotpix_resize_half ${LANG_GERMAN} "50 %"
+LangString lotpix_resize_instagram_square ${LANG_ENGLISH} "Instagram square (1080 × 1080)"
+LangString lotpix_resize_instagram_square ${LANG_FRENCH} "Instagram carré (1080 × 1080)"
+LangString lotpix_resize_instagram_square ${LANG_SPANISH} "Instagram cuadrado (1080 × 1080)"
+LangString lotpix_resize_instagram_square ${LANG_GERMAN} "Instagram quadratisch (1080 × 1080)"
+LangString lotpix_resize_instagram_portrait ${LANG_ENGLISH} "Instagram portrait (1080 × 1350)"
+LangString lotpix_resize_instagram_portrait ${LANG_FRENCH} "Instagram portrait (1080 × 1350)"
+LangString lotpix_resize_instagram_portrait ${LANG_SPANISH} "Instagram vertical (1080 × 1350)"
+LangString lotpix_resize_instagram_portrait ${LANG_GERMAN} "Instagram Hochformat (1080 × 1350)"
+LangString lotpix_resize_story ${LANG_ENGLISH} "Story, Reels, TikTok (1080 × 1920)"
+LangString lotpix_resize_story ${LANG_FRENCH} "Story, Reels, TikTok (1080 × 1920)"
+LangString lotpix_resize_story ${LANG_SPANISH} "Stories, Reels, TikTok (1080 × 1920)"
+LangString lotpix_resize_story ${LANG_GERMAN} "Story, Reels, TikTok (1080 × 1920)"
+LangString lotpix_resize_facebook ${LANG_ENGLISH} "Facebook, LinkedIn (1200 × 630)"
+LangString lotpix_resize_facebook ${LANG_FRENCH} "Facebook, LinkedIn (1200 × 630)"
+LangString lotpix_resize_facebook ${LANG_SPANISH} "Facebook, LinkedIn (1200 × 630)"
+LangString lotpix_resize_facebook ${LANG_GERMAN} "Facebook, LinkedIn (1200 × 630)"
+LangString lotpix_resize_x ${LANG_ENGLISH} "X (1600 × 900)"
+LangString lotpix_resize_x ${LANG_FRENCH} "X (1600 × 900)"
+LangString lotpix_resize_x ${LANG_SPANISH} "X (1600 × 900)"
+LangString lotpix_resize_x ${LANG_GERMAN} "X (1600 × 900)"
+LangString lotpix_resize_youtube ${LANG_ENGLISH} "YouTube thumbnail (1280 × 720)"
+LangString lotpix_resize_youtube ${LANG_FRENCH} "Miniature YouTube (1280 × 720)"
+LangString lotpix_resize_youtube ${LANG_SPANISH} "Miniatura de YouTube (1280 × 720)"
+LangString lotpix_resize_youtube ${LANG_GERMAN} "YouTube-Vorschaubild (1280 × 720)"
+LangString lotpix_resize_pinterest ${LANG_ENGLISH} "Pinterest (1000 × 1500)"
+LangString lotpix_resize_pinterest ${LANG_FRENCH} "Pinterest (1000 × 1500)"
+LangString lotpix_resize_pinterest ${LANG_SPANISH} "Pinterest (1000 × 1500)"
+LangString lotpix_resize_pinterest ${LANG_GERMAN} "Pinterest (1000 × 1500)"
+
 !macro LotpixMenu CLASS ARGUMENT
   ; Repart de zéro : une version précédente a pu laisser d'autres entrées
   !insertmacro LotpixMenuRemove "${CLASS}" "${ARGUMENT}"
 
-  ; Les entrées d'un sous-menu sont triées par nom de clé
-  !insertmacro LotpixSubmenu "Software\Classes\${CLASS}\shell\Lotpix.Compress" "Compresser avec Lotpix"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\1-webp" "WebP" "compress --format webp" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\2-jpg" "JPEG" "compress --format jpg" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\3-png" "PNG (sans perte)" "compress --format png" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\4-avif" "AVIF" "compress --format avif" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\5-original" "Format d'origine" "compress --format original" "${ARGUMENT}"
+  !insertmacro LotpixSubmenu "Software\Classes\${CLASS}\shell\Lotpix.Compress" "$(lotpix_compress)"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\01-webp" "$(lotpix_compress_webp)" "compress --format webp" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\02-jpg" "$(lotpix_compress_jpg)" "compress --format jpg" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\03-png" "$(lotpix_compress_png)" "compress --format png" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\04-avif" "$(lotpix_compress_avif)" "compress --format avif" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\05-original" "$(lotpix_compress_original)" "compress --format original" "${ARGUMENT}"
 
-  !insertmacro LotpixSubmenu "Software\Classes\${CLASS}\shell\Lotpix.Resize" "Redimensionner avec Lotpix"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\01-4k" "4K (3840 px)" "resize --size 4k" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\02-full-hd" "Full HD (1920 px)" "resize --size full-hd" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\03-hd" "HD (1280 px)" "resize --size hd" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\04-web" "Web (1024 px)" "resize --size web" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\05-thumbnail" "Miniature (640 px)" "resize --size thumbnail" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\06-half" "50 %" "resize --size half" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\07-instagram-square" "Instagram carré (1080 × 1080)" "resize --size instagram-square" "${ARGUMENT}"
+  !insertmacro LotpixSubmenu "Software\Classes\${CLASS}\shell\Lotpix.Resize" "$(lotpix_resize)"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\01-4k" "$(lotpix_resize_4k)" "resize --size 4k" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\02-full-hd" "$(lotpix_resize_full_hd)" "resize --size full-hd" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\03-hd" "$(lotpix_resize_hd)" "resize --size hd" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\04-web" "$(lotpix_resize_web)" "resize --size web" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\05-thumbnail" "$(lotpix_resize_thumbnail)" "resize --size thumbnail" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\06-half" "$(lotpix_resize_half)" "resize --size half" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\07-instagram-square" "$(lotpix_resize_instagram_square)" "resize --size instagram-square" "${ARGUMENT}"
   ; Séparateur avant les réseaux sociaux (ECF_SEPARATORBEFORE)
   WriteRegDWORD SHCTX "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\07-instagram-square" "CommandFlags" 0x20
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\08-instagram-portrait" "Instagram portrait (1080 × 1350)" "resize --size instagram-portrait" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\09-story" "Story, Reels, TikTok (1080 × 1920)" "resize --size story" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\10-facebook" "Facebook, LinkedIn (1200 × 630)" "resize --size facebook" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\11-x" "X (1600 × 900)" "resize --size x" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\12-youtube" "Miniature YouTube (1280 × 720)" "resize --size youtube" "${ARGUMENT}"
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\13-pinterest" "Pinterest (1000 × 1500)" "resize --size pinterest" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\08-instagram-portrait" "$(lotpix_resize_instagram_portrait)" "resize --size instagram-portrait" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\09-story" "$(lotpix_resize_story)" "resize --size story" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\10-facebook" "$(lotpix_resize_facebook)" "resize --size facebook" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\11-x" "$(lotpix_resize_x)" "resize --size x" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\12-youtube" "$(lotpix_resize_youtube)" "resize --size youtube" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\13-pinterest" "$(lotpix_resize_pinterest)" "resize --size pinterest" "${ARGUMENT}"
 
-  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Open" "Ouvrir dans Lotpix" "open" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Open" "$(lotpix_open)" "open" "${ARGUMENT}"
   WriteRegStr SHCTX "Software\Classes\${CLASS}\shell\Lotpix.Open" "Icon" "$\"$INSTDIR\${MAINBINARYNAME}.exe$\",0"
 !macroend
 
@@ -149,6 +238,7 @@ Section un.ContextMenu
   !insertmacro LotpixMenus LotpixMenuRemove
 SectionEnd
 '''
+# Fin du menu contextuel de l'Explorateur
 
 # Menus contextuels de Dolphin (KDE) et de Nemo (Cinnamon)
 [package.metadata.packager.deb]

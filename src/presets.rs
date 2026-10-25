@@ -120,6 +120,52 @@ pub fn size(id: &str) -> Option<&'static Size> {
     SIZES.iter().find(|size| size.id == id)
 }
 
+/// Sous-menu d'un menu contextuel : « Compresser avec Lotpix » ou « Redimensionner avec Lotpix ».
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Submenu {
+    Compress,
+    Resize,
+}
+
+impl Submenu {
+    pub fn title(self) -> String {
+        match self {
+            Self::Compress => t!("menu-compress"),
+            Self::Resize => t!("menu-resize"),
+        }
+    }
+
+    /// Consigne de la liste de choix, pour les gestionnaires de fichiers sans sous-menus.
+    pub fn prompt(self) -> String {
+        match self {
+            Self::Compress => t!("menu-choose-format"),
+            Self::Resize => t!("menu-choose-size"),
+        }
+    }
+
+    /// Option de la ligne de commande que reçoit chaque entrée.
+    pub fn option(self) -> &'static str {
+        match self {
+            Self::Compress => "compress --format",
+            Self::Resize => "resize --size",
+        }
+    }
+
+    /// Entrées dans l'ordre du menu : valeur de l'option et libellé dans la langue courante.
+    pub fn entries(self) -> Vec<(&'static str, String)> {
+        match self {
+            Self::Compress => vec![
+                ("webp", t!("menu-format-webp")),
+                ("jpg", t!("menu-format-jpg")),
+                ("png", t!("menu-format-png")),
+                ("avif", t!("menu-format-avif")),
+                ("original", t!("menu-format-original")),
+            ],
+            Self::Resize => SIZES.iter().map(|size| (size.id, size.label())).collect(),
+        }
+    }
+}
+
 /// Entrée choisie dans le menu contextuel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Preset {

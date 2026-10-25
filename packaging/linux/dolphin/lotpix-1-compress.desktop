@@ -1,8 +1,12 @@
+# Généré par `LOTPIX_UPDATE_MENUS=1 cargo test` (src/context_menu.rs) : ne pas modifier à la main
 [Desktop Entry]
 Type=Service
 MimeType=image/jpeg;image/png;image/gif;image/tiff;image/webp;inode/directory;
 Actions=webp;jpg;png;avif;original;
-X-KDE-Submenu=Compresser avec Lotpix
+X-KDE-Submenu=Compress with Lotpix
+X-KDE-Submenu[fr]=Compresser avec Lotpix
+X-KDE-Submenu[es]=Comprimir con Lotpix
+X-KDE-Submenu[de]=Mit Lotpix komprimieren
 X-KDE-Priority=TopLevel
 Icon=lotpix
 
@@ -15,7 +19,10 @@ Name=JPEG
 Exec=lotpix compress --format jpg %F
 
 [Desktop Action png]
-Name=PNG (sans perte)
+Name=PNG (lossless)
+Name[fr]=PNG (sans perte)
+Name[es]=PNG (sin pérdida)
+Name[de]=PNG (verlustfrei)
 Exec=lotpix compress --format png %F
 
 [Desktop Action avif]
@@ -23,5 +30,8 @@ Name=AVIF
 Exec=lotpix compress --format avif %F
 
 [Desktop Action original]
-Name=Format d'origine
+Name=Original format
+Name[fr]=Format d'origine
+Name[es]=Formato original
+Name[de]=Originalformat
 Exec=lotpix compress --format original %F
