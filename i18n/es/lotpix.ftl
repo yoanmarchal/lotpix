@@ -125,3 +125,81 @@ file-unknown = desconocido
 dialog-choose-images = Elegir imágenes
 dialog-images-filter = Imágenes
 dialog-choose-output = Elegir la carpeta de salida
+
+## Errores de conversión
+
+error-invalid-path = La ruta del archivo de origen no es válida o falta
+error-unsupported-extension = Extensión no compatible: { $extension }
+error-no-extension = (ninguna)
+error-source-not-found = El archivo de origen no existe: { $path }
+error-not-a-file = La ruta no corresponde a un archivo: { $path }
+error-invalid-quality = La calidad debe ser un número entre 1 y 100
+error-invalid-resize = El tamaño solicitado debe estar entre 1 y { $max } { $unit }
+error-too-large = La imagen mediría { $width } × { $height } px: el formato { $format } está limitado a { $max } px por lado
+error-too-many-pixels = La imagen mediría { $width } × { $height } px: es demasiado para procesarla (máximo { $max } megapíxeles)
+error-empty-output = El archivo de salida está vacío
+error-decode = Imagen ilegible: { $error }
+error-resize = Error al redimensionar: { $error }
+error-encode = Error de codificación: { $error }
+error-resize-buffer = búfer de salida no válido
+error-webp-config = configuración WebP no válida
+error-webp-version = versión de libwebp incompatible
+error-webp-animation = no se pudo crear el codificador de animación
+error-webp-dimensions = fotograma con dimensiones inesperadas
+error-webp-unknown = error desconocido
+
+## Línea de comandos y notificaciones
+
+cli-usage = Uso:
+cli-files = archivos…
+cli-files-or-folders = archivos o carpetas…
+cli-format = formato
+cli-size = tamaño
+cli-help-open = Abre la interfaz con estas imágenes
+cli-help-open-gather = Igual, agrupando los lanzamientos simultáneos
+cli-help-compress-format = Comprime con la calidad recomendada
+cli-help-resize = Redimensiona con la calidad recomendada
+cli-help-compress-saved = Comprime con los ajustes de la interfaz
+cli-help-folders = Las carpetas se recorren con sus subcarpetas. Con --format y --size, las imágenes se guardan junto a las originales.
+cli-help-formats = Formatos:
+cli-help-original-format = formato original
+cli-help-sizes = Tamaños (los formatos de redes sociales se recortan al centro y se guardan en JPEG):
+cli-unknown-format = Formato desconocido: { $value }
+cli-unknown-size = Tamaño desconocido: { $value }
+cli-missing-size = Falta el tamaño: --size <tamaño>
+report-compressed =
+    { $count ->
+        [one] { $count } imagen comprimida
+       *[other] { $count } imágenes comprimidas
+    }
+report-resized =
+    { $count ->
+        [one] { $count } imagen redimensionada
+       *[other] { $count } imágenes redimensionadas
+    }
+report-failures =
+    { $count ->
+        [one] , { $count } error
+       *[other] , { $count } errores
+    }
+report-failure = { $name }: { $error }
+report-impossible = No se puede comprimir
+report-invalid-saved-resize = El tamaño de redimensionado guardado no es válido: corríjalo en Lotpix
+report-no-images = No hay imágenes que procesar
+report-supported-formats = Formatos compatibles: JPEG, PNG, GIF, TIFF y WebP
+
+## Tamaños del menú contextual
+
+size-4k = 4K (3840 px)
+size-full-hd = Full HD (1920 px)
+size-hd = HD (1280 px)
+size-web = Web (1024 px)
+size-thumbnail = Miniatura (640 px)
+size-half = 50 %
+size-instagram-square = Instagram cuadrado (1080 × 1080)
+size-instagram-portrait = Instagram vertical (1080 × 1350)
+size-story = Stories, Reels, TikTok (1080 × 1920)
+size-facebook = Facebook, LinkedIn (1200 × 630)
+size-x = X (1600 × 900)
+size-youtube = Miniatura de YouTube (1280 × 720)
+size-pinterest = Pinterest (1000 × 1500)

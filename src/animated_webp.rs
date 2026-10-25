@@ -8,6 +8,8 @@ use std::ptr;
 
 use libwebp_sys as sys;
 
+use crate::t;
+
 pub struct AnimatedWebpEncoder {
     // Invariant : pointeur non nul rendu par `WebPAnimEncoderNewInternal`, libéré dans `drop`
     encoder: *mut sys::WebPAnimEncoder,
@@ -19,8 +21,7 @@ pub struct AnimatedWebpEncoder {
 impl AnimatedWebpEncoder {
     /// `loop_count` vaut 0 pour une boucle infinie.
     pub fn new(width: u32, height: u32, quality: f32, loop_count: i32) -> Result<Self, String> {
-        let mut config =
-            sys::WebPConfig::new().map_err(|()| "configuration WebP invalide".to_owned())?;
+        let mut config = sys::WebPConfig::new().map_err(|()| t!("error-webp-config"))?;
         config.quality = quality;
 
         let abi_version = sys::WebPGetMuxABIVersion();
@@ -29,7 +30,7 @@ impl AnimatedWebpEncoder {
         // entièrement quand l'appel réussit ; on ne la lit que dans ce cas.
         let mut options = unsafe {
             if sys::WebPAnimEncoderOptionsInitInternal(options.as_mut_ptr(), abi_version) == 0 {
-                return Err("version de libwebp incompatible".to_owned());
+                return Err(t!("error-webp-version"));
             }
             options.assume_init()
         };
@@ -40,7 +41,7 @@ impl AnimatedWebpEncoder {
             sys::WebPAnimEncoderNewInternal(width as c_int, height as c_int, &options, abi_version)
         };
         if encoder.is_null() {
-            return Err("impossible de créer l'encodeur d'animation".to_owned());
+            return Err(t!("error-webp-animation"));
         }
         Ok(Self {
             encoder,
@@ -54,11 +55,10 @@ impl AnimatedWebpEncoder {
     pub fn add_frame(&mut self, rgba: &[u8], timestamp_ms: i32) -> Result<(), String> {
         let stride = self.width as usize * 4;
         if rgba.len() != stride * self.height as usize {
-            return Err("image aux dimensions inattendues".to_owned());
+            return Err(t!("error-webp-dimensions"));
         }
 
-        let mut picture =
-            sys::WebPPicture::new().map_err(|()| "version de libwebp incompatible".to_owned())?;
+        let mut picture = sys::WebPPicture::new().map_err(|()| t!("error-webp-version"))?;
         picture.use_argb = 1;
         picture.width = self.width as c_int;
         picture.height = self.height as c_int;
@@ -112,7 +112,7 @@ impl AnimatedWebpEncoder {
         unsafe {
             let message = sys::WebPAnimEncoderGetError(self.encoder);
             if message.is_null() {
-                "erreur inconnue".to_owned()
+                t!("error-webp-unknown")
             } else {
                 CStr::from_ptr(message).to_string_lossy().into_owned()
             }

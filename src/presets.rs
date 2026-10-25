@@ -4,6 +4,7 @@
 use std::path::Path;
 
 use crate::conversion::{ConvertOptions, FormatChoice, Frame, OutputFormat, Resize, ResizeMode};
+use crate::t;
 
 /// Qualité donnant des artefacts invisibles à l'œil pour un fichier léger. L'échelle de l'AVIF
 /// est plus sévère : 65 y vaut à peu près 80 en WebP, pour un fichier plus léger.
@@ -30,8 +31,29 @@ pub enum Target {
 pub struct Size {
     /// Identifiant de la ligne de commande (`--size`).
     pub id: &'static str,
-    pub label: &'static str,
     pub target: Target,
+}
+
+impl Size {
+    /// Nom affiché, dans la langue courante.
+    pub fn label(&self) -> String {
+        match self.id {
+            "4k" => t!("size-4k"),
+            "full-hd" => t!("size-full-hd"),
+            "hd" => t!("size-hd"),
+            "web" => t!("size-web"),
+            "thumbnail" => t!("size-thumbnail"),
+            "half" => t!("size-half"),
+            "instagram-square" => t!("size-instagram-square"),
+            "instagram-portrait" => t!("size-instagram-portrait"),
+            "story" => t!("size-story"),
+            "facebook" => t!("size-facebook"),
+            "x" => t!("size-x"),
+            "youtube" => t!("size-youtube"),
+            "pinterest" => t!("size-pinterest"),
+            _ => unreachable!("taille sans libellé : {}", self.id),
+        }
+    }
 }
 
 const fn frame(width: u32, height: u32) -> Target {
@@ -42,67 +64,54 @@ const fn frame(width: u32, height: u32) -> Target {
 pub const SIZES: [Size; 13] = [
     Size {
         id: "4k",
-        label: "4K (3840 px)",
         target: Target::LongestSide(3840),
     },
     Size {
         id: "full-hd",
-        label: "Full HD (1920 px)",
         target: Target::LongestSide(1920),
     },
     Size {
         id: "hd",
-        label: "HD (1280 px)",
         target: Target::LongestSide(1280),
     },
     Size {
         id: "web",
-        label: "Web (1024 px)",
         target: Target::LongestSide(1024),
     },
     Size {
         id: "thumbnail",
-        label: "Miniature (640 px)",
         target: Target::LongestSide(640),
     },
     Size {
         id: "half",
-        label: "50 %",
         target: Target::Percent(50),
     },
     Size {
         id: "instagram-square",
-        label: "Instagram carré (1080 × 1080)",
         target: frame(1080, 1080),
     },
     Size {
         id: "instagram-portrait",
-        label: "Instagram portrait (1080 × 1350)",
         target: frame(1080, 1350),
     },
     Size {
         id: "story",
-        label: "Story, Reels, TikTok (1080 × 1920)",
         target: frame(1080, 1920),
     },
     Size {
         id: "facebook",
-        label: "Facebook, LinkedIn (1200 × 630)",
         target: frame(1200, 630),
     },
     Size {
         id: "x",
-        label: "X (1600 × 900)",
         target: frame(1600, 900),
     },
     Size {
         id: "youtube",
-        label: "Miniature YouTube (1280 × 720)",
         target: frame(1280, 720),
     },
     Size {
         id: "pinterest",
-        label: "Pinterest (1000 × 1500)",
         target: frame(1000, 1500),
     },
 ];

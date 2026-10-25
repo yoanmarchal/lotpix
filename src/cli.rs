@@ -18,32 +18,50 @@ use crate::presets::{self, Preset, SIZES};
 use crate::queue;
 use crate::settings::Settings;
 use crate::storage;
+use crate::t;
 
 fn usage() -> String {
-    let sizes: Vec<String> = SIZES
-        .iter()
-        .map(|size| format!("  {:<20} {}", size.id, size.label))
-        .collect();
-    format!(
-        "\
-Utilisation :
-  lotpix [fichiers…]                       ouvre l'interface avec ces images
-  lotpix open <fichiers ou dossiers…>      idem, en regroupant les lancements simultanés
-  lotpix compress --format <format> <fichiers ou dossiers…>
-                                           compresse avec la qualité recommandée
-  lotpix resize --size <taille> <fichiers ou dossiers…>
-                                           redimensionne avec la qualité recommandée
-  lotpix compress <fichiers ou dossiers…>  compresse avec les réglages de l'interface
-
-Les dossiers sont parcourus avec leurs sous-dossiers. Avec --format et --size, les
-images sont écrites à côté des originales.
-
-Formats : webp, jpg, png, avif, original (format d'origine)
-
-Tailles (les formats des réseaux sociaux sont recadrés au centre et écrits en JPEG) :
-{}",
-        sizes.join("\n")
-    )
+    let files = t!("cli-files");
+    let paths = t!("cli-files-or-folders");
+    let format = t!("cli-format");
+    let size = t!("cli-size");
+    let commands = [
+        (format!("lotpix [{files}]"), t!("cli-help-open")),
+        (format!("lotpix open <{paths}>"), t!("cli-help-open-gather")),
+        (
+            format!("lotpix compress --format <{format}> <{paths}>"),
+            t!("cli-help-compress-format"),
+        ),
+        (
+            format!("lotpix resize --size <{size}> <{paths}>"),
+            t!("cli-help-resize"),
+        ),
+        (
+            format!("lotpix compress <{paths}>"),
+            t!("cli-help-compress-saved"),
+        ),
+    ];
+    let mut lines = vec![t!("cli-usage")];
+    for (command, help) in commands {
+        lines.push(format!("  {command}"));
+        lines.push(format!("      {help}"));
+    }
+    lines.push(String::new());
+    lines.push(t!("cli-help-folders"));
+    lines.push(String::new());
+    lines.push(format!(
+        "{} webp, jpg, png, avif, original ({})",
+        t!("cli-help-formats"),
+        t!("cli-help-original-format")
+    ));
+    lines.push(String::new());
+    lines.push(t!("cli-help-sizes"));
+    lines.extend(
+        SIZES
+            .iter()
+            .map(|size| format!("  {:<20} {}", size.id, size.label())),
+    );
+    lines.join("\n")
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -92,19 +110,16 @@ pub fn parse(arguments: impl IntoIterator<Item = OsString>) -> Command {
                 match preset {
                     Some(preset) => Some(preset),
                     None => {
-                        let kind = if name == "compress" {
-                            "Format"
+                        let value = value.to_string_lossy();
+                        return Command::Invalid(if name == "compress" {
+                            t!("cli-unknown-format", value = value.as_ref())
                         } else {
-                            "Taille"
-                        };
-                        return Command::Invalid(format!(
-                            "{kind} inconnu(e) : {}",
-                            value.to_string_lossy()
-                        ));
+                            t!("cli-unknown-size", value = value.as_ref())
+                        });
                     }
                 }
             } else if name == "resize" {
-                return Command::Invalid("Taille manquante : --size <taille>".to_owned());
+                return Command::Invalid(t!("cli-missing-size"));
             } else {
                 None
             };
@@ -239,8 +254,8 @@ fn convert(data_dir: &Path, paths: &[PathBuf], preset: Option<Preset>) -> Report
             let settings = Settings::load(&data_dir.join("settings.json"));
             let Some(options) = settings.options() else {
                 return Report::failure(
-                    "Compression impossible",
-                    "La taille de redimensionnement enregistrée est invalide : corrigez-la dans Lotpix",
+                    &t!("report-impossible"),
+                    &t!("report-invalid-saved-resize"),
                 );
             };
             if jobs.is_empty() {
@@ -249,19 +264,16 @@ fn convert(data_dir: &Path, paths: &[PathBuf], preset: Option<Preset>) -> Report
             batch::convert_all(&jobs, &options)
         }
     };
-    let (singular, plural_form) = match preset {
-        Some(Preset::Resize(_)) => ("image redimensionnée", "images redimensionnées"),
-        _ => ("image compressée", "images compressées"),
-    };
-    let mut report = summarize(data_dir, &jobs, results, singular, plural_form);
+    let resized = matches!(preset, Some(Preset::Resize(_)));
+    let mut report = summarize(data_dir, &jobs, results, resized);
     report.success &= ignored == 0;
     report
 }
 
 fn no_images(ignored: usize) -> Report {
     Report {
-        title: "Aucune image à traiter".to_owned(),
-        body: "Formats pris en charge : JPEG, PNG, GIF, TIFF et WebP".to_owned(),
+        title: t!("report-no-images"),
+        body: t!("report-supported-formats"),
         lines: Vec::new(),
         success: ignored == 0,
     }
@@ -272,8 +284,7 @@ fn summarize(
     data_dir: &Path,
     jobs: &[Job],
     results: Vec<Result<ConversionResult, ConversionError>>,
-    singular: &str,
-    plural_form: &str,
+    resized: bool,
 ) -> Report {
     let mut history = History::load(data_dir.join("history.json"));
     let mut lines = Vec::new();
@@ -294,15 +305,24 @@ fn summarize(
                 let _ = history.add(HistoryItem::new(job.source.clone(), &result, Utc::now()));
             }
             Err(error) => {
-                lines.push(format!("{name} : {error}"));
-                failures.push(format!("{name} : {error}"));
+                let failure = t!(
+                    "report-failure",
+                    name = name.as_str(),
+                    error = error.to_string()
+                );
+                lines.push(failure.clone());
+                failures.push(failure);
             }
         }
     }
 
-    let mut title = plural(converted, singular, plural_form);
+    let mut title = if resized {
+        t!("report-resized", count = converted)
+    } else {
+        t!("report-compressed", count = converted)
+    };
     if !failures.is_empty() {
-        title.push_str(&format!(", {}", plural(failures.len(), "échec", "échecs")));
+        title.push_str(&t!("report-failures", count = failures.len()));
     }
     let body = if converted > 0 {
         let ratio = (1.0 - new_size as f64 / original_size as f64) * 100.0;
@@ -357,10 +377,6 @@ fn file_name(path: &Path) -> String {
         || path.display().to_string(),
         |name| name.to_string_lossy().into_owned(),
     )
-}
-
-fn plural(count: usize, singular: &str, plural: &str) -> String {
-    format!("{count} {}", if count > 1 { plural } else { singular })
 }
 
 #[cfg(test)]
@@ -587,5 +603,56 @@ mod tests {
         assert!(report.success);
         let output = dir.path().join("petite.jpg");
         assert_eq!(image::image_dimensions(&output).unwrap(), (400, 400));
+    }
+
+    #[test]
+    fn reports_and_help_follow_the_current_language() {
+        i18n::set_language(i18n::Language::De);
+        let dir = tempfile::tempdir().unwrap();
+        let photo = dir.path().join("a.png");
+        create_image(&photo, 8, 8);
+        let broken = dir.path().join("b.png");
+        std::fs::write(&broken, "pas une image").unwrap();
+
+        let preset = Preset::Compress(FormatChoice::Fixed(OutputFormat::Jpg));
+        let report = convert(dir.path(), &[photo, broken], Some(preset));
+
+        assert_eq!(report.title, "1 Bild komprimiert, 1 Fehler");
+        assert!(
+            report.body.contains("b.png: Bild unlesbar"),
+            "{}",
+            report.body
+        );
+
+        i18n::set_language(i18n::Language::En);
+        let help = usage();
+        assert!(help.starts_with("Usage:"));
+        assert!(help.contains("instagram-square     Instagram square (1080 × 1080)"));
+        assert_eq!(
+            parse(arguments(&["resize", "--size", "géant", "a.png"])),
+            Command::Invalid("Unknown size: géant".to_owned())
+        );
+    }
+
+    #[test]
+    fn conversion_errors_follow_the_current_language() {
+        use crate::conversion::ConversionError;
+
+        let error = ConversionError::UnsupportedExtension(String::new());
+        assert_eq!(error.to_string(), "Extension non supportée : (aucune)");
+
+        i18n::set_language(i18n::Language::Es);
+        assert_eq!(error.to_string(), "Extensión no compatible: (ninguna)");
+        let error = ConversionError::TooLarge {
+            width: 16_384,
+            height: 1,
+            format: "WebP",
+            max: 16_383,
+        };
+        // Les dimensions restent écrites sans séparateur de milliers
+        assert_eq!(
+            error.to_string(),
+            "La imagen mediría 16384 × 1 px: el formato WebP está limitado a 16383 px por lado"
+        );
     }
 }

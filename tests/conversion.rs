@@ -18,6 +18,12 @@ use tempfile::TempDir;
 
 const BLUE: Rgb<u8> = Rgb([0x33, 0x66, 0xcc]);
 
+/// Les messages d'erreur sont traduits : ces tests vérifient le texte français. Tous les tests
+/// de ce fichier choisissent la même langue, ils ne se gênent donc pas en parallèle.
+fn in_french() {
+    lotpix::i18n::set_language(lotpix::i18n::Language::Fr);
+}
+
 fn temp_dir() -> TempDir {
     tempfile::Builder::new()
         .prefix("lotpix-test-")
@@ -510,6 +516,7 @@ mod resizing {
 
     #[test]
     fn rejects_images_too_large_for_webp() {
+        in_french();
         let dir = temp_dir();
         let input = create_image(dir.path(), "bandeau.png", 16_384, 1);
 
@@ -528,12 +535,14 @@ mod source_file {
 
     #[test]
     fn rejects_relative_paths() {
+        in_french();
         let error = assert_image_file(Path::new("photo.png")).unwrap_err();
         assert!(error.to_string().contains("invalide"));
     }
 
     #[test]
     fn rejects_unsupported_extensions() {
+        in_french();
         let dir = temp_dir();
         let bmp = dir.path().join("image.bmp");
         fs::write(&bmp, "BM").unwrap();
@@ -544,6 +553,7 @@ mod source_file {
 
     #[test]
     fn rejects_avif_input() {
+        in_french();
         let dir = temp_dir();
         let error = assert_image_file(&dir.path().join("photo.avif")).unwrap_err();
         assert_eq!(error.to_string(), "Extension non supportée : .avif");
@@ -551,6 +561,7 @@ mod source_file {
 
     #[test]
     fn reports_missing_files() {
+        in_french();
         let dir = temp_dir();
         let path = dir.path().join("absent.png");
 
@@ -624,6 +635,7 @@ mod info {
 
     #[test]
     fn rejects_unsupported_extensions() {
+        in_french();
         let dir = temp_dir();
         let error = image_info(&dir.path().join("image.bmp")).unwrap_err();
         assert!(error.to_string().contains("Extension non supportée"));
