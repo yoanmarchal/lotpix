@@ -1,4 +1,4 @@
-// Pas de console derrière la fenêtre dans la version distribuée
+// No console behind the window in the distributed version
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::process::ExitCode;

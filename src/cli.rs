@@ -1,7 +1,7 @@
-// Ligne de commande : compression et redimensionnement sans ouvrir de fenêtre. Les entrées
-// « Compresser avec Lotpix » et « Redimensionner avec Lotpix » du menu contextuel lancent
-// `lotpix compress --format <format>` et `lotpix resize --size <taille>`, avec les réglages
-// recommandés (src/presets.rs)
+// Command line: compression and resizing without opening a window. The "Compress with
+// Lotpix" and "Resize with Lotpix" entries of the context menu run
+// `lotpix compress --format <format>` and `lotpix resize --size <size>`, with the recommended
+// settings (src/presets.rs)
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -75,26 +75,26 @@ fn menu_choices(submenu: Submenu) -> String {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Command {
-    /// Ouvre l'interface avec ces fichiers ou dossiers.
+    /// Opens the interface with these files or folders.
     Open {
         paths: Vec<PathBuf>,
         gather: bool,
     },
-    /// Convertit sans interface, avec un préréglage ou, à défaut, les réglages de l'interface.
+    /// Converts without the interface, with a preset or, failing that, the interface settings.
     Convert {
         paths: Vec<PathBuf>,
         preset: Option<Preset>,
     },
     Help,
-    /// Liste de choix d'un sous-menu, pour le script des actions Nemo (packaging/linux/nemo) :
-    /// titre, consigne, puis chaque valeur suivie de son libellé, une ligne chacun.
+    /// Choices of a submenu, for the script of the Nemo actions (packaging/linux/nemo): title,
+    /// prompt, then each value followed by its label, one line each.
     MenuChoices(Submenu),
-    /// Arguments incompris : le message à afficher.
+    /// Arguments not understood: the message to display.
     Invalid(String),
 }
 
-/// Arguments sans le nom du programme. Un chemin relatif (lancement depuis un terminal) est
-/// résolu depuis le dossier courant.
+/// Arguments without the program name. A relative path (run from a terminal) is resolved
+/// from the current folder.
 pub fn parse(arguments: impl IntoIterator<Item = OsString>) -> Command {
     let mut arguments = arguments.into_iter().peekable();
     let command = arguments
@@ -181,7 +181,7 @@ fn absolute_paths(arguments: impl Iterator<Item = OsString>) -> Vec<PathBuf> {
 }
 
 pub fn run(command: Command) -> ExitCode {
-    // L'interface, les notifications et l'aide suivent la langue choisie dans les préférences
+    // The interface, the notifications and the help follow the language chosen in the preferences
     let preferences = Preferences::load(&storage::data_dir().join("preferences.json"));
     i18n::set_language(preferences.language.resolve());
     match command {
@@ -203,7 +203,7 @@ pub fn run(command: Command) -> ExitCode {
             } else {
                 paths
             };
-            // Un lancement regroupé avec un autre n'a rien à ouvrir
+            // A launch grouped with another one has nothing to open
             if gather && paths.is_empty() {
                 return ExitCode::SUCCESS;
             }
@@ -213,7 +213,7 @@ pub fn run(command: Command) -> ExitCode {
             }
         }
         Command::Convert { paths, preset } => {
-            // Une file par entrée du menu : deux entrées choisies coup sur coup ne se mélangent pas
+            // One queue per menu entry: two entries chosen one after the other do not get mixed
             let queue_name = preset.map_or_else(|| "compress".to_owned(), |preset| preset.id());
             let paths = gathered(paths, &queue_name);
             if paths.is_empty() {
@@ -233,8 +233,8 @@ pub fn run(command: Command) -> ExitCode {
     }
 }
 
-/// Seul l'Explorateur Windows lance un processus par fichier : ailleurs, tous les fichiers
-/// arrivent ensemble et il n'y a rien à attendre.
+/// Only Windows Explorer starts one process per file: elsewhere, all the files arrive
+/// together and there is nothing to wait for.
 fn gathered(paths: Vec<PathBuf>, queue_name: &str) -> Vec<PathBuf> {
     if !cfg!(windows) {
         return paths;
@@ -247,7 +247,7 @@ fn gathered(paths: Vec<PathBuf>, queue_name: &str) -> Vec<PathBuf> {
 struct Report {
     title: String,
     body: String,
-    /// Une ligne par image, pour le terminal.
+    /// One line per image, for the terminal.
     lines: Vec<String>,
     success: bool,
 }
@@ -303,7 +303,7 @@ fn no_images(ignored: usize) -> Report {
     }
 }
 
-/// Bilan du lot, et ajout des conversions réussies à l'historique.
+/// Summary of the batch, and successful conversions added to the history.
 fn summarize(
     data_dir: &Path,
     jobs: &[Job],
@@ -372,15 +372,15 @@ fn summarize(
     }
 }
 
-/// Une notification qui échoue (pas de service de notifications) n'empêche rien : les images
-/// sont déjà converties.
+/// A notification that fails (no notification service) prevents nothing: the images are
+/// already converted.
 fn notify(title: &str, body: &str) {
     let mut notification = notify_rust::Notification::new();
     notification.summary(title).body(body).appname("Lotpix");
     #[cfg(target_os = "linux")]
     notification.icon("lotpix");
-    // Windows n'affiche la notification au nom de Lotpix que si l'application est installée :
-    // l'identifiant est celui du raccourci du menu Démarrer créé par l'installeur
+    // Windows only shows the notification under the Lotpix name if the application is installed:
+    // the identifier is the one of the Start menu shortcut created by the installer
     #[cfg(windows)]
     if is_installed() {
         notification.app_id("com.yoanmarchal.lotpix");
@@ -423,7 +423,7 @@ mod tests {
         let command = parse(arguments(&["photo.png"]));
 
         let Command::Open { paths, gather } = command else {
-            panic!("ouverture attendue : {command:?}");
+            panic!("expected opening: {command:?}");
         };
         assert!(!gather);
         assert_eq!(paths.len(), 1);
@@ -473,9 +473,9 @@ mod tests {
         );
     }
 
-    /// Chaque entrée des sous-menus contextuels, à partir desquels sont générés les menus de
-    /// Windows, Dolphin et Nemo (src/context_menu.rs), doit être comprise par la ligne de
-    /// commande.
+    /// Every entry of the context submenus, from which the Windows, Dolphin and Nemo
+    /// menus are generated (src/context_menu.rs), must be understood by the command
+    /// line.
     #[test]
     fn context_menu_entries_are_valid_commands() {
         for submenu in [Submenu::Compress, Submenu::Resize] {
@@ -493,7 +493,7 @@ mod tests {
                             ..
                         }
                     ),
-                    "{command:?} : {parsed:?}"
+                    "{command:?}: {parsed:?}"
                 );
             }
         }
@@ -543,7 +543,7 @@ mod tests {
     fn reports_a_selection_without_images() {
         let dir = tempfile::tempdir().unwrap();
         let notes = dir.path().join("notes.txt");
-        std::fs::write(&notes, "pas une image").unwrap();
+        std::fs::write(&notes, "not an image").unwrap();
 
         let report = convert(dir.path(), &[notes], None);
 
@@ -576,7 +576,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let photo = dir.path().join("a.png");
         create_image(&photo, 8, 8);
-        // Réglages de l'interface qui ne doivent pas s'appliquer
+        // Interface settings that must not apply
         let settings = Settings {
             output_dir: Some(dir.path().join("sortie")),
             resize_enabled: true,
@@ -628,7 +628,7 @@ mod tests {
         let photo = dir.path().join("a.png");
         create_image(&photo, 8, 8);
         let broken = dir.path().join("b.png");
-        std::fs::write(&broken, "pas une image").unwrap();
+        std::fs::write(&broken, "not an image").unwrap();
 
         let preset = Preset::Compress(FormatChoice::Fixed(OutputFormat::Jpg));
         let report = convert(dir.path(), &[photo, broken], Some(preset));
@@ -645,8 +645,8 @@ mod tests {
         assert!(help.starts_with("Usage:"));
         assert!(help.contains("instagram-square     Instagram square (1080 × 1080)"));
         assert_eq!(
-            parse(arguments(&["resize", "--size", "géant", "a.png"])),
-            Command::Invalid("Unknown size: géant".to_owned())
+            parse(arguments(&["resize", "--size", "giant", "a.png"])),
+            Command::Invalid("Unknown size: giant".to_owned())
         );
     }
 
@@ -665,7 +665,7 @@ mod tests {
             format: "WebP",
             max: 16_383,
         };
-        // Les dimensions restent écrites sans séparateur de milliers
+        // Dimensions stay written without a thousands separator
         assert_eq!(
             error.to_string(),
             "La imagen mediría 16384 × 1 px: el formato WebP está limitado a 16383 px por lado"

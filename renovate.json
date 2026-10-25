@@ -6,13 +6,13 @@
   ],
   "packageRules": [
     {
-      "description": "Cargo.lock fige déjà les versions : pas d'épinglage exact des dev-dependencies",
+      "description": "Cargo.lock already pins the versions: no exact pinning of dev-dependencies",
       "matchManagers": ["cargo"],
       "matchDepTypes": ["dev-dependencies"],
       "rangeStrategy": "auto"
     },
     {
-      "description": "À ne monter qu'avec la crate qui les embarque (webp pour libwebp-sys, image pour moxcms), sinon deux versions cohabitent dans le binaire",
+      "description": "Only bump together with the crate that bundles them (webp for libwebp-sys, image for moxcms), otherwise two versions end up in the binary",
       "matchManagers": ["cargo"],
       "matchPackageNames": ["libwebp-sys", "moxcms"],
       "dependencyDashboardApproval": true

@@ -1,18 +1,18 @@
-// Préréglages du menu contextuel : qualité recommandée pour chaque format, tailles standard et
-// formats des réseaux sociaux. Ils ne dépendent pas des réglages de l'interface, pour que le
-// menu donne toujours le même résultat
+// Context menu presets: recommended quality for each format, standard sizes and social
+// network formats. They do not depend on the interface settings, so that the menu always
+// gives the same result
 use std::path::Path;
 
 use crate::conversion::{ConvertOptions, FormatChoice, Frame, OutputFormat, Resize, ResizeMode};
 use crate::t;
 
-/// Qualité donnant des artefacts invisibles à l'œil pour un fichier léger. L'échelle de l'AVIF
-/// est plus sévère : 65 y vaut à peu près 80 en WebP, pour un fichier plus léger.
+/// Quality giving artifacts invisible to the eye for a small file. The AVIF scale is
+/// harsher: 65 there is roughly 80 in WebP, for a smaller file.
 pub fn recommended_quality(format: OutputFormat) -> u8 {
     match format {
         OutputFormat::Webp => 80,
         OutputFormat::Jpg => 82,
-        // Sans perte : la qualité est ignorée
+        // Lossless: quality is ignored
         OutputFormat::Png => 100,
         OutputFormat::Avif => 65,
     }
@@ -20,22 +20,22 @@ pub fn recommended_quality(format: OutputFormat) -> u8 {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Target {
-    /// Côté le plus long, en pixels.
+    /// Longest side, in pixels.
     LongestSide(u32),
     Percent(u32),
-    /// Taille exacte, avec recadrage au centre.
+    /// Exact size, cropped to the center.
     Frame(Frame),
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Size {
-    /// Identifiant de la ligne de commande (`--size`).
+    /// Command line identifier (`--size`).
     pub id: &'static str,
     pub target: Target,
 }
 
 impl Size {
-    /// Nom affiché, dans la langue courante.
+    /// Displayed name, in the current language.
     pub fn label(&self) -> String {
         match self.id {
             "4k" => t!("size-4k"),
@@ -51,7 +51,7 @@ impl Size {
             "x" => t!("size-x"),
             "youtube" => t!("size-youtube"),
             "pinterest" => t!("size-pinterest"),
-            _ => unreachable!("taille sans libellé : {}", self.id),
+            _ => unreachable!("size without a label: {}", self.id),
         }
     }
 }
@@ -60,7 +60,7 @@ const fn frame(width: u32, height: u32) -> Target {
     Target::Frame(Frame { width, height })
 }
 
-/// Tailles standard, puis formats des réseaux sociaux.
+/// Standard sizes, then social network formats.
 pub const SIZES: [Size; 13] = [
     Size {
         id: "4k",
@@ -120,7 +120,7 @@ pub fn size(id: &str) -> Option<&'static Size> {
     SIZES.iter().find(|size| size.id == id)
 }
 
-/// Sous-menu d'un menu contextuel : « Compresser avec Lotpix » ou « Redimensionner avec Lotpix ».
+/// Submenu of a context menu: "Compress with Lotpix" or "Resize with Lotpix".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Submenu {
     Compress,
@@ -135,7 +135,7 @@ impl Submenu {
         }
     }
 
-    /// Consigne de la liste de choix, pour les gestionnaires de fichiers sans sous-menus.
+    /// Prompt of the list of choices, for file managers without submenus.
     pub fn prompt(self) -> String {
         match self {
             Self::Compress => t!("menu-choose-format"),
@@ -143,7 +143,7 @@ impl Submenu {
         }
     }
 
-    /// Option de la ligne de commande que reçoit chaque entrée.
+    /// Command line option that each entry receives.
     pub fn option(self) -> &'static str {
         match self {
             Self::Compress => "compress --format",
@@ -151,7 +151,7 @@ impl Submenu {
         }
     }
 
-    /// Entrées dans l'ordre du menu : valeur de l'option et libellé dans la langue courante.
+    /// Entries in menu order: option value and label in the current language.
     pub fn entries(self) -> Vec<(&'static str, String)> {
         match self {
             Self::Compress => vec![
@@ -166,19 +166,19 @@ impl Submenu {
     }
 }
 
-/// Entrée choisie dans le menu contextuel.
+/// Entry chosen in the context menu.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Preset {
-    /// Compression au format choisi, sans redimensionnement.
+    /// Compression to the chosen format, without resizing.
     Compress(FormatChoice),
-    /// Redimensionnement. Les réseaux sociaux recompressent les images et acceptent mal le
-    /// WebP et l'AVIF : leurs formats sont écrits en JPEG ; les tailles standard gardent le
-    /// format d'origine.
+    /// Resizing. Social networks recompress images and handle WebP and AVIF poorly: their
+    /// formats are saved as JPEG; the standard sizes keep the original
+    /// format.
     Resize(&'static Size),
 }
 
 impl Preset {
-    /// Identifiant stable, par exemple « compress-webp » ou « resize-story ».
+    /// Stable identifier, for example "compress-webp" or "resize-story".
     pub fn id(&self) -> String {
         match self {
             Self::Compress(FormatChoice::Original) => "compress-original".to_owned(),
@@ -200,8 +200,8 @@ impl Preset {
         }
     }
 
-    /// Options pour une image, avec la qualité recommandée pour le format dans lequel elle
-    /// sera écrite. Le résultat va toujours à côté de l'original.
+    /// Options for an image, with the recommended quality for the format it will be saved in.
+    /// The result always goes next to the original.
     pub fn options(&self, path: &Path) -> ConvertOptions {
         let format = self.format().resolve(path);
         let (resize, frame) = match self {
@@ -222,7 +222,7 @@ impl Preset {
     }
 }
 
-/// Une image déjà plus petite que la cible garde sa taille.
+/// An image already smaller than the target keeps its size.
 fn shrink(mode: ResizeMode, value: u32) -> Resize {
     Resize {
         mode,
@@ -238,7 +238,12 @@ mod tests {
     #[test]
     fn size_ids_are_unique_and_valid() {
         for (index, size) in SIZES.iter().enumerate() {
-            assert_eq!(super::size(size.id), Some(size), "{} en double", size.id);
+            assert_eq!(
+                super::size(size.id),
+                Some(size),
+                "{} is duplicated",
+                size.id
+            );
             match size.target {
                 Target::Frame(frame) => frame.validate().unwrap(),
                 Target::LongestSide(value) => {

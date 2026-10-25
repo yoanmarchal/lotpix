@@ -1,4 +1,4 @@
-// Système de design : couleurs, espacements et styles de chaque contrôle, en clair et en sombre
+// Design system: colors, spacing and styles of each control, in light and dark
 use iced::border::{self, Border};
 use iced::font::{self, Font};
 use iced::theme::Palette;
@@ -39,7 +39,7 @@ pub const FONT_SEMIBOLD: Font = Font {
 pub struct Tokens {
     pub background: Color,
     pub surface: Color,
-    /// Fond des zones en retrait : champs en lecture seule, en-têtes de tableau, pistes.
+    /// Background of recessed areas: read-only fields, table headers, tracks.
     pub surface_muted: Color,
     pub surface_hover: Color,
     pub border: Color,
@@ -49,7 +49,7 @@ pub struct Tokens {
     pub text_muted: Color,
     pub primary: Color,
     pub primary_hover: Color,
-    /// Texte et icônes à la couleur d'accent, lisibles sur `surface`.
+    /// Text and icons in the accent color, readable on `surface`.
     pub primary_text: Color,
     pub primary_soft: Color,
     pub primary_soft_text: Color,
@@ -64,7 +64,7 @@ pub struct Tokens {
     pub shadow: Color,
 }
 
-// Mêmes teintes que l'ancienne interface (palette Tailwind : gray, teal, red, green)
+// Same hues as the former interface (Tailwind palette: gray, teal, red, green)
 pub const LIGHT: Tokens = Tokens {
     background: color!(0xf9fafb),
     surface: color!(0xffffff),
@@ -121,7 +121,7 @@ pub fn tokens(dark_mode: bool) -> Tokens {
     if dark_mode { DARK } else { LIGHT }
 }
 
-/// Thème Iced de base : sert aux rares éléments qui n'ont pas de style explicite.
+/// Base Iced theme: used by the few elements without an explicit style.
 pub fn iced_theme(dark_mode: bool) -> Theme {
     let tokens = tokens(dark_mode);
     Theme::custom(
@@ -149,7 +149,7 @@ fn outline(color: Color, radius: f32) -> Border {
     }
 }
 
-// --- Conteneurs ---
+// --- Containers ---
 
 pub fn page(tokens: Tokens) -> container::Style {
     container::Style {
@@ -192,7 +192,7 @@ pub fn status_bar(tokens: Tokens) -> container::Style {
     }
 }
 
-/// Bandeau d'annonce sous l'en-tête (nouvelle version disponible).
+/// Announcement banner under the header (new version available).
 pub fn banner(tokens: Tokens) -> container::Style {
     container::Style {
         background: Some(tokens.primary_soft.into()),
@@ -231,7 +231,7 @@ pub fn drop_zone(tokens: Tokens, is_hovered: bool) -> container::Style {
     }
 }
 
-/// Pastille ronde derrière une grande icône.
+/// Round disc behind a large icon.
 pub fn icon_disc(tokens: Tokens) -> container::Style {
     container::Style {
         background: Some(tokens.primary_soft.into()),
@@ -256,7 +256,7 @@ pub fn thumbnail(tokens: Tokens) -> container::Style {
     }
 }
 
-/// Champ en lecture seule (dossier de sortie).
+/// Read-only field (output folder).
 pub fn read_only_field(tokens: Tokens) -> container::Style {
     container::Style {
         background: Some(tokens.surface_muted.into()),
@@ -301,7 +301,7 @@ pub fn tooltip(tokens: Tokens) -> container::Style {
     }
 }
 
-/// Voile posé sur les réglages pendant une conversion.
+/// Veil over the settings during a conversion.
 pub fn veil(tokens: Tokens) -> container::Style {
     container::Style {
         background: Some(with_alpha(tokens.surface, 0.6).into()),
@@ -310,7 +310,7 @@ pub fn veil(tokens: Tokens) -> container::Style {
     }
 }
 
-// --- Boutons ---
+// --- Buttons ---
 
 fn filled_button(
     tokens: Tokens,
@@ -339,7 +339,7 @@ pub fn danger_button(tokens: Tokens, status: button::Status) -> button::Style {
     filled_button(tokens, status, tokens.danger, tokens.danger_hover)
 }
 
-/// Bouton à bordure, pour les actions secondaires.
+/// Outlined button, for secondary actions.
 pub fn outline_button(tokens: Tokens, status: button::Status) -> button::Style {
     let background = match status {
         button::Status::Hovered | button::Status::Pressed => tokens.surface_hover,
@@ -356,7 +356,7 @@ pub fn outline_button(tokens: Tokens, status: button::Status) -> button::Style {
     }
 }
 
-/// Onglet de navigation de l'en-tête.
+/// Navigation tab of the header.
 pub fn tab_button(tokens: Tokens, is_active: bool, status: button::Status) -> button::Style {
     let (background, text_color) = match (is_active, status) {
         (true, _) => (Some(tokens.primary_soft), tokens.primary_soft_text),
@@ -373,7 +373,7 @@ pub fn tab_button(tokens: Tokens, is_active: bool, status: button::Status) -> bu
     }
 }
 
-/// Bouton sans fond dont seul le texte change de couleur au survol (icône, lien).
+/// Button without background whose text alone changes color on hover (icon, link).
 pub fn text_button(status: button::Status, color: Color, hover: Color) -> button::Style {
     button::Style {
         background: None,
@@ -394,7 +394,7 @@ pub fn danger_link_button(tokens: Tokens, status: button::Status) -> button::Sty
     text_button(status, tokens.danger_text, tokens.danger_hover)
 }
 
-/// Bouton discret qui vire au rouge au survol (retirer une image).
+/// Discreet button that turns red on hover (remove an image).
 pub fn remove_button(tokens: Tokens, status: button::Status) -> button::Style {
     text_button(status, tokens.text_muted, tokens.danger_text)
 }
@@ -414,7 +414,7 @@ pub fn icon_button(tokens: Tokens, status: button::Status) -> button::Style {
     }
 }
 
-// --- Champs ---
+// --- Fields ---
 
 pub fn pick_list_style(tokens: Tokens, status: pick_list::Status) -> pick_list::Style {
     pick_list::Style {

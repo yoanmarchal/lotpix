@@ -1,4 +1,4 @@
-// Interface Iced : état de l'application, messages et mise à jour
+// Iced interface: application state, messages and update
 #[cfg(test)]
 mod captures;
 mod convert;
@@ -29,13 +29,13 @@ use crate::t;
 use crate::update::{self, Version};
 use theme::Tokens;
 
-// Chaque image décodée occupe plusieurs dizaines de Mo : on borne le nombre de lectures
-// simultanées quand l'utilisateur dépose un dossier entier
+// Each decoded image takes several tens of MB: the number of simultaneous reads is bounded
+// when the user drops a whole folder
 static LOAD_LIMIT: LazyLock<Semaphore> = LazyLock::new(|| {
     Semaphore::new(std::thread::available_parallelism().map_or(2, |count| count.get()))
 });
 
-/// Ouvre la fenêtre, avec ces images et dossiers déjà ajoutés.
+/// Opens the window, with these images and folders already added.
 pub fn run(paths: Vec<PathBuf>) -> iced::Result {
     iced::application(move || App::new(paths.clone()), App::update, App::view)
         .title("Lotpix")
@@ -72,7 +72,7 @@ pub struct ImageEntry {
     id: ImageId,
     name: String,
     path: PathBuf,
-    /// Sous-dossier recréé dans le dossier de sortie (image trouvée dans un dossier ajouté).
+    /// Subfolder recreated in the output folder (image found in an added folder).
     subdir: PathBuf,
     size: u64,
     dimensions: (u32, u32),
@@ -98,7 +98,7 @@ pub enum Message {
     FileDropped(PathBuf),
     SelectFiles,
     FilesSelected(Vec<PathBuf>),
-    /// Images trouvées dans les dossiers ajoutés.
+    /// Images found in the added folders.
     FoldersScanned(u64, Vec<Job>),
     ImageLoaded(u64, Option<ImageEntry>),
     RemoveImage(ImageId),
@@ -130,24 +130,24 @@ pub struct App {
     settings: Settings,
     settings_path: PathBuf,
     is_converting: bool,
-    /// Images traitées et images à traiter du lot en cours.
+    /// Processed images and images to process in the current batch.
     batch: (usize, usize),
-    /// Conversions en cours d'exécution.
+    /// Conversions currently running.
     active_conversions: usize,
-    /// Images en cours de lecture (dimensions et miniature).
+    /// Images being read (dimensions and thumbnail).
     loading: usize,
-    /// Augmente quand la liste est vidée : les lectures lancées avant sont alors ignorées.
+    /// Increases when the list is cleared: reads started before are then ignored.
     load_generation: u64,
-    /// Fichiers refusés depuis le dernier ajout.
+    /// Files refused since the last addition.
     ignored: usize,
     is_hovered: bool,
-    /// Un sélecteur de fichiers ou de dossier est ouvert : ne pas en ouvrir un second.
+    /// A file or folder picker is open: do not open a second one.
     is_dialog_open: bool,
-    /// L'écran Historique demande de confirmer le vidage.
+    /// The History screen asks to confirm clearing.
     is_confirming_clear: bool,
-    /// Message de la barre de statut (fichiers ignorés, ouverture impossible…).
+    /// Status bar message (ignored files, file that cannot be opened…).
     notice: Option<String>,
-    /// Version plus récente trouvée au démarrage, tant que le bandeau n'est pas fermé.
+    /// Newer version found at startup, until the banner is closed.
     available_update: Option<Version>,
     history: History,
     preferences: Preferences,
@@ -157,8 +157,8 @@ pub struct App {
 }
 
 impl App {
-    /// `paths` : fichiers passés en arguments (« Ouvrir avec », menu contextuel, dépôt sur
-    /// l'icône de l'application).
+    /// `paths`: files passed as arguments ("Open with", context menu, drop on the
+    /// application icon).
     fn new(paths: Vec<PathBuf>) -> (Self, Task<Message>) {
         let mut app = Self::with_data_dir(&storage::data_dir());
         let load = app.load_images(paths);
@@ -166,8 +166,8 @@ impl App {
         (app, Task::batch([load, check]))
     }
 
-    /// Interroge GitHub en tâche de fond : le démarrage n'attend pas la réponse, et une
-    /// erreur ou une absence de réseau ne se voit pas.
+    /// Queries GitHub in the background: startup does not wait for the answer, and an
+    /// error or a missing network goes unnoticed.
     fn check_for_update(&self) -> Task<Message> {
         if !self.preferences.check_updates {
             return Task::none();
@@ -241,7 +241,7 @@ impl App {
                 self.theme = theme::iced_theme(self.preferences.dark_mode);
                 self.save_preferences();
             }
-            // Toute l'interface est redessinée dans la nouvelle langue, sans redémarrer
+            // The whole interface is redrawn in the new language, without restarting
             Message::LanguageSelected(choice) => {
                 self.preferences.language = choice;
                 i18n::set_language(choice.resolve());
@@ -249,7 +249,7 @@ impl App {
             }
 
             Message::UpdateChecked(version) => {
-                // Le réglage a pu être désactivé pendant que la requête était en cours
+                // The setting may have been turned off while the request was running
                 if self.preferences.check_updates {
                     self.available_update = version;
                 }
@@ -286,7 +286,7 @@ impl App {
             }
             Message::FilesSelected(paths) => {
                 self.is_dialog_open = false;
-                // Le sélecteur a pu rester ouvert pendant qu'une conversion démarrait
+                // The picker may have stayed open while a conversion started
                 if !self.is_converting {
                     return self.load_images(paths);
                 }
@@ -300,10 +300,10 @@ impl App {
             Message::ImageLoaded(generation, loaded) => {
                 self.loading = self.loading.saturating_sub(1);
                 match loaded {
-                    // La liste a été vidée pendant la lecture : l'image ne doit pas y revenir
+                    // The list was cleared during the read: the image must not come back
                     _ if generation != self.load_generation => {}
                     Some(image) => {
-                        // Les lectures se terminent dans le désordre : on garde l'ordre d'ajout
+                        // Reads finish out of order: the order of addition is kept
                         let position = self.images.partition_point(|other| other.id < image.id);
                         self.images.insert(position, image);
                     }
@@ -331,7 +331,7 @@ impl App {
                 self.change_settings(|settings| settings.resize_enabled = enabled);
             }
             Message::ResizeModeSelected(mode) => self.change_settings(|settings| {
-                // Une valeur en pixels n'a pas de sens en pourcentage, et inversement
+                // A value in pixels makes no sense as a percentage, and the other way round
                 let was_percent = settings.resize_mode == ResizeMode::Percent;
                 let is_percent = mode == ResizeMode::Percent;
                 if was_percent != is_percent {
@@ -367,7 +367,7 @@ impl App {
 
             Message::Convert => {
                 let pending = self.pending_count();
-                // Pas de conversion tant que des images se chargent : le lot doit être complet
+                // No conversion while images are loading: the batch must be complete
                 let is_ready = !self.is_converting && self.loading == 0 && pending > 0;
                 if is_ready && self.settings.options().is_some() {
                     self.is_converting = true;
@@ -389,7 +389,7 @@ impl App {
                     }
                     Err(error) => Status::Failed(error),
                 };
-                // L'image a pu être retirée de la liste pendant sa conversion
+                // The image may have been removed from the list during its conversion
                 if let Some(image) = self.images.iter_mut().find(|image| image.id == id) {
                     image.status = status;
                 }
@@ -408,7 +408,7 @@ impl App {
         Task::none()
     }
 
-    /// Ajoute des images ; un dossier apporte les images de toute son arborescence.
+    /// Adds images; a folder brings the images of its whole tree.
     fn load_images(&mut self, paths: Vec<PathBuf>) -> Task<Message> {
         if self.loading == 0 {
             self.ignored = 0;
@@ -419,7 +419,7 @@ impl App {
         if folders.is_empty() {
             return load;
         }
-        // Le parcours d'une grande arborescence ne doit pas figer la fenêtre
+        // Walking a large tree must not freeze the window
         self.loading += 1;
         let generation = self.load_generation;
         let scan = Task::perform(
@@ -450,7 +450,7 @@ impl App {
         }))
     }
 
-    /// Après un changement de réglages, les images déjà traitées redeviennent à convertir.
+    /// After a settings change, the images already processed are to be converted again.
     fn change_settings(&mut self, change: impl FnOnce(&mut Settings)) {
         if self.is_converting {
             return;
@@ -466,8 +466,8 @@ impl App {
         }
     }
 
-    /// Lance les conversions des images en attente, dans la limite de `conversion_slots`.
-    /// Le lot est terminé quand plus rien n'est en attente ni en cours.
+    /// Starts the conversions of the pending images, within the limit of `conversion::parallel_conversions`.
+    /// The batch is done when nothing is pending or running anymore.
     fn start_conversions(&mut self) -> Task<Message> {
         let Some(options) = self.settings.options() else {
             self.is_converting = false;
@@ -512,7 +512,7 @@ impl App {
     }
 
     fn open_file(&mut self, path: &Path) {
-        // Seulement des images produites par l'application : jamais d'exécutable ni de script
+        // Only images produced by the application: never an executable or a script
         let is_output = OutputFormat::ALL
             .iter()
             .any(|format| format.extension() == conversion::extension(path));
@@ -635,7 +635,7 @@ const LANGUAGE_CHOICES: [LanguageChoice; 5] = [
     LanguageChoice::Fixed(Language::De),
 ];
 
-// Libellés des listes déroulantes, dans la langue courante
+// Labels of the drop-down lists, in the current language
 impl fmt::Display for FormatChoice {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(&match self {
@@ -648,8 +648,8 @@ impl fmt::Display for FormatChoice {
     }
 }
 
-/// Chaque langue s'affiche dans sa propre langue, pour qu'on la reconnaisse sans la lire ;
-/// « Système » indique la langue qu'il donne.
+/// Each language is shown in its own language, so that it can be recognized without reading
+/// it; "System" shows the language it resolves to.
 impl fmt::Display for LanguageChoice {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -714,7 +714,7 @@ mod tests {
         let (mut app, _dir) = app();
         app.images = vec![
             image(0, Status::Converted(result())),
-            image(1, Status::Failed("erreur".to_owned())),
+            image(1, Status::Failed("error".to_owned())),
         ];
 
         let _ = app.update(Message::QualityChanged(60));
@@ -825,11 +825,11 @@ mod tests {
         let _ = app.update(Message::Converted(
             0,
             PathBuf::from("/images/photo-0.png"),
-            Err("Image illisible".to_owned()),
+            Err("Unreadable image".to_owned()),
         ));
 
         assert!(
-            matches!(&app.images[0].status, Status::Failed(error) if error == "Image illisible")
+            matches!(&app.images[0].status, Status::Failed(error) if error == "Unreadable image")
         );
         assert!(app.history.items().is_empty());
     }
@@ -916,7 +916,7 @@ mod tests {
         app.active_conversions = 2;
         app.batch = (0, 2);
 
-        let failure = || Err("Image illisible".to_owned());
+        let failure = || Err("Unreadable image".to_owned());
         let _ = app.update(Message::Converted(
             0,
             PathBuf::from("/images/a.png"),
@@ -988,7 +988,7 @@ mod tests {
         assert_eq!(app.available_update, None);
         assert!(!App::with_data_dir(dir.path()).preferences.check_updates);
 
-        // Une réponse arrivée après coup ne rouvre pas le bandeau
+        // An answer arriving afterwards does not reopen the banner
         let _ = app.update(Message::UpdateChecked(Version::parse("2.1.0")));
         assert_eq!(app.available_update, None);
     }

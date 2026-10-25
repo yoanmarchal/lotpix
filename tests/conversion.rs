@@ -18,8 +18,8 @@ use tempfile::TempDir;
 
 const BLUE: Rgb<u8> = Rgb([0x33, 0x66, 0xcc]);
 
-/// Les messages d'erreur sont traduits : ces tests vérifient le texte français. Tous les tests
-/// de ce fichier choisissent la même langue, ils ne se gênent donc pas en parallèle.
+/// Error messages are translated: these tests check the French text. All the tests of
+/// this file choose the same language, so they do not get in each other's way in parallel.
 fn in_french() {
     lotpix::i18n::set_language(lotpix::i18n::Language::Fr);
 }
@@ -47,14 +47,14 @@ fn create_transparent_image(dir: &Path, name: &str, width: u32, height: u32) -> 
     path
 }
 
-// JPEG de 60 × 40 dont l'EXIF demande une rotation de 90° (orientation 6)
+// 60 × 40 JPEG whose EXIF asks for a 90° rotation (orientation 6)
 fn create_portrait_jpeg(dir: &Path) -> PathBuf {
     #[rustfmt::skip]
     let exif = vec![
-        0x49, 0x49, 0x2a, 0, 8, 0, 0, 0, // en-tête TIFF petit-boutiste, répertoire à l'octet 8
-        1, 0, // une entrée
-        0x12, 0x01, 3, 0, 1, 0, 0, 0, 6, 0, 0, 0, // Orientation (0x0112), SHORT, valeur 6
-        0, 0, 0, 0, // pas de répertoire suivant
+        0x49, 0x49, 0x2a, 0, 8, 0, 0, 0, // little-endian TIFF header, directory at byte 8
+        1, 0, // one entry
+        0x12, 0x01, 3, 0, 1, 0, 0, 0, 6, 0, 0, 0, // Orientation (0x0112), SHORT, value 6
+        0, 0, 0, 0, // no next directory
     ];
     let path = dir.join("portrait.jpg");
     let mut encoder = JpegEncoder::new(File::create(&path).unwrap());
@@ -74,7 +74,7 @@ fn create_animated_gif(dir: &Path) -> PathBuf {
     create_gif(dir, "anim.gif", &[100, 100, 100])
 }
 
-// GIF de 16 × 16 avec une image par délai (en millisecondes), chacune d'une couleur unie
+// 16 × 16 GIF with one frame per delay (in milliseconds), each in a solid color
 fn create_gif(dir: &Path, name: &str, delays_ms: &[u32]) -> PathBuf {
     const COLORS: [[u8; 4]; 3] = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]];
     let path = dir.join(name);
@@ -92,7 +92,7 @@ fn create_gif(dir: &Path, name: &str, delays_ms: &[u32]) -> PathBuf {
     path
 }
 
-// PNG d'une couleur unie, étiqueté avec le profil de couleur donné
+// PNG in a solid color, tagged with the given color profile
 fn create_profiled_png(dir: &Path, name: &str, color: Rgba<u8>, icc_profile: Vec<u8>) -> PathBuf {
     let path = dir.join(name);
     let mut encoder = PngEncoder::new(File::create(&path).unwrap());
@@ -675,7 +675,7 @@ mod animation {
         let image = image::open(&result.output_path).unwrap().to_rgb8();
         assert_eq!(image.dimensions(), (16, 16));
         assert!(image[(8, 8)][0] > 200, "{:?}", image[(8, 8)]);
-        // Un WebP fixe ne contient aucune image d'animation
+        // A still WebP contains no animation frame
         assert_eq!(webp_frame_count(&result.output_path), 0);
     }
 
@@ -713,7 +713,7 @@ mod color_profile {
 
         let result = convert_image(&input, &options(OutputFormat::Png)).unwrap();
 
-        // Ce vert Adobe RGB est plus saturé que le même triplet en sRGB : le rouge baisse
+        // This Adobe RGB green is more saturated than the same triplet in sRGB: red goes down
         let pixel = image::open(&result.output_path).unwrap().to_rgba8()[(4, 4)];
         assert!(pixel[0] < 80, "{pixel:?}");
         assert!(pixel[1].abs_diff(200) <= 6, "{pixel:?}");
@@ -742,7 +742,7 @@ mod color_profile {
             dir.path(),
             "casse.png",
             Rgba([100, 200, 50, 255]),
-            b"pas un profil".to_vec(),
+            b"not a profile".to_vec(),
         );
 
         let result = convert_image(&input, &options(OutputFormat::Png)).unwrap();
@@ -768,7 +768,7 @@ mod limits {
             ..options(OutputFormat::Png)
         };
 
-        // 16 384 × 26 214 400 px : plus de 1 500 Go si l'allocation était tentée
+        // 16,384 × 26,214,400 px: more than 1,500 GB if the allocation were attempted
         let error = convert_image(&input, &upscale).unwrap_err();
 
         assert!(
@@ -795,7 +795,7 @@ mod limits {
         let error = convert_image(&input, &upscale).unwrap_err();
 
         assert!(matches!(error, ConversionError::TooLarge { .. }), "{error}");
-        // Un redimensionnement vers 20 000 × 12 000 px prendrait plusieurs secondes
+        // Resizing to 20,000 × 12,000 px would take several seconds
         assert!(start.elapsed() < std::time::Duration::from_secs(2));
     }
 }

@@ -1,13 +1,13 @@
-// Vérification des mises à jour : compare la version de l'application à la dernière release
-// publiée sur GitHub. L'application ne télécharge ni n'installe rien elle-même.
+// Update check: compares the application version with the latest release published on
+// GitHub. The application downloads and installs nothing by itself.
 use std::fmt;
 use std::time::Duration;
 
-/// Page de la dernière release, ouverte par le bouton « Télécharger ». L'adresse est fixe :
-/// rien de ce que renvoie le réseau ne décide de ce que le navigateur ouvre.
+/// Page of the latest release, opened by the "Download" button. The address is fixed:
+/// nothing returned by the network decides what the browser opens.
 pub const DOWNLOAD_URL: &str = "https://github.com/yoanmarchal/lotpix/releases/latest";
 
-// Sans réponse dans ce délai, la vérification est abandonnée en silence
+// Without an answer within this delay, the check is silently abandoned
 const TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -18,7 +18,7 @@ pub struct Version {
 }
 
 impl Version {
-    /// Lit « 2.1.0 » ou « v2.1.0 ». Tout autre format (préversion, texte libre) est refusé.
+    /// Reads "2.1.0" or "v2.1.0". Any other format (pre-release, free text) is refused.
     pub fn parse(text: &str) -> Option<Self> {
         let mut parts = text.trim().trim_start_matches('v').split('.');
         let mut next = || parts.next()?.parse().ok();
@@ -31,7 +31,7 @@ impl Version {
     }
 
     pub fn current() -> Self {
-        Self::parse(env!("CARGO_PKG_VERSION")).expect("version de Cargo.toml au format x.y.z")
+        Self::parse(env!("CARGO_PKG_VERSION")).expect("Cargo.toml version in x.y.z format")
     }
 }
 
@@ -41,20 +41,20 @@ impl fmt::Display for Version {
     }
 }
 
-/// Version désignée par l'adresse d'une release, par exemple `…/releases/tag/v2.1.0`.
+/// Version given by the address of a release, for example `…/releases/tag/v2.1.0`.
 fn version_from_release_url(url: &str) -> Option<Version> {
     let (_, tag) = url.rsplit_once("/releases/tag/")?;
     Version::parse(tag)
 }
 
-/// Adresse vers laquelle GitHub redirige la page « dernière release ».
+/// Address to which GitHub redirects the "latest release" page.
 ///
-/// On lit la redirection de la page web plutôt que d'appeler l'API : celle-ci est limitée à
-/// 60 requêtes par heure et par adresse IP, vite atteintes derrière un réseau d'entreprise.
+/// The redirect of the web page is read rather than calling the API: the API is limited to
+/// 60 requests per hour and per IP address, quickly reached behind a company network.
 fn fetch_latest_release_url() -> Option<String> {
     let agent: ureq::Agent = ureq::Agent::config_builder()
         .timeout_global(Some(TIMEOUT))
-        // La réponse attendue est la redirection elle-même : ne pas la suivre
+        // The expected answer is the redirect itself: do not follow it
         .max_redirects(0)
         .max_redirects_will_error(false)
         .build()
@@ -74,9 +74,9 @@ fn fetch_latest_release_url() -> Option<String> {
     )
 }
 
-/// Version plus récente que celle de l'application, s'il y en a une. Appel bloquant, à lancer
-/// hors du fil de l'interface. Hors ligne ou en cas d'erreur, il n'y a simplement rien à
-/// proposer.
+/// Newer version than the application's, if there is one. Blocking call, to run outside
+/// the interface thread. Offline or on error, there is simply nothing to
+/// offer.
 pub fn check() -> Option<Version> {
     let latest = version_from_release_url(&fetch_latest_release_url()?)?;
     (latest > Version::current()).then_some(latest)
@@ -140,7 +140,7 @@ mod tests {
 
         for url in [
             String::new(),
-            // Dépôt sans aucune release : GitHub renvoie vers la liste, vide
+            // Repository without any release: GitHub redirects to the empty list
             format!("{repository}/releases"),
             format!("{repository}/releases/tag/nightly"),
             format!("{repository}/releases/tag/v3.0.0-rc.1"),
@@ -151,11 +151,11 @@ mod tests {
         }
     }
 
-    // Appelle réellement GitHub : cargo test -- --ignored queries_github
+    // Really calls GitHub: cargo test -- --ignored queries_github
     #[test]
-    #[ignore = "accès réseau"]
+    #[ignore = "network access"]
     fn queries_github() {
-        let url = fetch_latest_release_url().expect("redirection de GitHub");
+        let url = fetch_latest_release_url().expect("GitHub redirect");
 
         assert!(version_from_release_url(&url).is_some(), "{url}");
     }

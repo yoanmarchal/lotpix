@@ -1,4 +1,4 @@
-# Même compilateur partout (CI, release, local) : sinon chaque mise à jour des runners invalide le cache
+# Same compiler everywhere (CI, release, local): otherwise every runner update invalidates the cache
 [toolchain]
 channel = "1.99.1"
 components = ["clippy", "rustfmt"]

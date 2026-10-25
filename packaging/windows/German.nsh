@@ -1,6 +1,6 @@
-﻿; Messages de l'installeur cargo-packager en allemand, absents de cargo-packager 0.11
-; (Cargo.toml, custom-language-files). Encodé en UTF-8 avec BOM : NSIS lit sinon le fichier
-; dans la page de code du système. Traduction automatique, à faire relire.
+﻿; German messages of the cargo-packager installer, missing from cargo-packager 0.11
+; (Cargo.toml, custom-language-file). Encoded as UTF-8 with a BOM: otherwise NSIS reads the
+; file in the system code page. Machine translation, to be reviewed.
 LangString addOrReinstall ${LANG_GERMAN} "Komponenten hinzufügen/neu installieren"
 LangString alreadyInstalled ${LANG_GERMAN} "Bereits installiert"
 LangString alreadyInstalledLong ${LANG_GERMAN} "${PRODUCTNAME} ${VERSION} ist bereits installiert. Wählen Sie den gewünschten Vorgang aus und klicken Sie auf Weiter."

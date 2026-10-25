@@ -37,7 +37,7 @@ fn finds_images_in_subfolders_only() {
     let root = dir.path().join("photos");
     let a = create_image(&root.join("a.png"));
     let b = create_image(&root.join("vacances").join("plage").join("b.jpg"));
-    fs::write(root.join("notes.txt"), "pas une image").unwrap();
+    fs::write(root.join("notes.txt"), "not an image").unwrap();
 
     let jobs = find_images(&root);
 
@@ -59,9 +59,9 @@ fn collects_files_and_folders_without_duplicates() {
     let root = dir.path().join("photos");
     let a = create_image(&root.join("a.png"));
     let notes = dir.path().join("notes.txt");
-    fs::write(&notes, "pas une image").unwrap();
+    fs::write(&notes, "not an image").unwrap();
 
-    // L'image est sélectionnée deux fois : seule, et par son dossier
+    // The image is selected twice: on its own, and through its folder
     let (jobs, ignored) = collect(&[a.clone(), root, notes]);
 
     assert_eq!(jobs, [Job::file(a)]);
@@ -113,7 +113,7 @@ fn keeps_failures_in_order() {
     let dir = temp_dir();
     let good = create_image(&dir.path().join("a.png"));
     let broken = dir.path().join("b.png");
-    fs::write(&broken, "pas une image").unwrap();
+    fs::write(&broken, "not an image").unwrap();
 
     let results = convert_all(&[Job::file(good), Job::file(broken)], &webp(None));
 

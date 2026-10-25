@@ -1,4 +1,4 @@
-// Icône et métadonnées de l'exécutable Windows (Explorateur, barre des tâches)
+// Icon and metadata of the Windows executable (Explorer, taskbar)
 fn main() {
     println!("cargo::rerun-if-changed=assets/icons/icon.ico");
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
@@ -7,6 +7,6 @@ fn main() {
             .set("ProductName", "Lotpix")
             .set("FileDescription", "Lotpix")
             .compile()
-            .expect("ressources Windows");
+            .expect("Windows resources");
     }
 }

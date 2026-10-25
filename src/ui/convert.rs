@@ -1,4 +1,4 @@
-// Écran « Convertir » : zone de dépôt, liste des images et panneau de réglages
+// "Convert" screen: drop zone, image list and settings panel
 use iced::widget::{
     button, checkbox, column, container, mouse_area, opaque, pick_list, progress_bar, row,
     scrollable, slider, space, stack, text, text_input, toggler, tooltip,
@@ -97,7 +97,7 @@ fn image_list(app: &App) -> Element<'_, Message> {
     if app.images.is_empty() {
         return empty_state(icon_file_x(), t!("list-empty"), tokens);
     }
-    // Une saisie de taille invalide n'affiche pas d'aperçu des dimensions
+    // An invalid size input shows no preview of the dimensions
     let resize = app.settings.resize().ok().flatten();
 
     let title = row![
@@ -125,7 +125,7 @@ fn image_list(app: &App) -> Element<'_, Message> {
             .map(|image| image_row(image, resize.as_ref(), tokens)),
     )
     .spacing(theme::SPACE_SM)
-    // Garde la barre de défilement à l'écart des lignes
+    // Keeps the scroll bar away from the rows
     .padding(iced::Padding::ZERO.right(theme::SPACE_MD));
 
     container(
@@ -250,7 +250,7 @@ fn image_row<'a>(
     .into()
 }
 
-/// Dimensions de l'image, suivies de celles qu'elle aura après redimensionnement.
+/// Dimensions of the image, followed by the ones it will have after resizing.
 fn dimensions<'a>(
     original: (u32, u32),
     resize: Option<&Resize>,
@@ -338,7 +338,7 @@ fn settings_panel(app: &App) -> Element<'_, Message> {
     ]
     .spacing(theme::SPACE_LG);
 
-    // Pendant une conversion, un voile bloque les réglages : ils valent pour tout le lot
+    // During a conversion, a veil blocks the settings: they apply to the whole batch
     let controls: Element<'_, Message> = if app.is_converting {
         stack![
             controls,
@@ -509,7 +509,7 @@ fn output_dir_field(app: &App) -> Element<'_, Message> {
         )
     };
 
-    // Un chemin long est coupé : l'infobulle le donne en entier
+    // A long path is cut: the tooltip gives it in full
     let path: Element<'_, Message> = match output_dir {
         Some(dir) => tooltip(
             path,

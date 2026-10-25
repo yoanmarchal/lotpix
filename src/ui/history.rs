@@ -1,4 +1,4 @@
-// Écran « Historique » : tableau des conversions passées
+// "History" screen: table of past conversions
 use chrono::Local;
 use iced::widget::{button, column, container, row, scrollable, space, text};
 use iced::{Center, Element, Fill, FillPortion};
@@ -12,7 +12,7 @@ use crate::format::{format_date, format_file_size, format_percent};
 use crate::history::HistoryItem;
 use crate::t;
 
-// Largeurs relatives des colonnes : fichier, tailles, dimensions, gain, date, actions
+// Relative widths of the columns: file, sizes, dimensions, saving, date, actions
 const COLUMNS: [u16; 7] = [4, 2, 2, 5, 2, 4, 2];
 
 pub fn view(app: &App) -> Element<'_, Message> {
@@ -22,8 +22,8 @@ pub fn view(app: &App) -> Element<'_, Message> {
         return empty_state(icon_file_text(), t!("history-empty"), tokens);
     }
 
-    // La confirmation se fait dans la page : une boîte de dialogue native n'existe pas sur
-    // toutes les distributions Linux
+    // The confirmation happens in the page: a native dialog box does not exist on every
+    // Linux distribution
     let actions: Element<'_, Message> = if app.is_confirming_clear {
         row![
             text(t!("history-clear-question"))

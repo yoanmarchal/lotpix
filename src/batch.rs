@@ -1,5 +1,5 @@
-// Lots d'images venant de fichiers et de dossiers : liste des images à traiter, puis
-// conversion sans interface (menu contextuel, ligne de commande)
+// Batches of images coming from files and folders: list of the images to process, then
+// conversion without the interface (context menu, command line)
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -10,12 +10,12 @@ use crate::conversion::{
     self, ConversionError, ConversionResult, ConvertOptions, FormatChoice, INPUT_EXTENSIONS,
 };
 
-/// Image à convertir.
+/// Image to convert.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Job {
     pub source: PathBuf,
-    /// Chemin du dossier de l'image relatif au dossier sélectionné, vide pour un fichier
-    /// sélectionné directement : il est recréé dans le dossier de sortie.
+    /// Path of the image folder relative to the selected folder, empty for a file selected
+    /// directly: it is recreated in the output folder.
     pub subdir: PathBuf,
 }
 
@@ -28,12 +28,12 @@ impl Job {
     }
 }
 
-/// Images d'une sélection, dans l'ordre et sans doublon, et nombre de fichiers sélectionnés
-/// refusés. Dans un dossier et ses sous-dossiers, seules les images sont gardées, sans
-/// compter les autres fichiers comme refusés.
+/// Images of a selection, in order and without duplicates, and the number of selected files
+/// refused. In a folder and its subfolders, only the images are kept, without counting the
+/// other files as refused.
 ///
-/// La liste est établie avant toute conversion : une image écrite dans un dossier parcouru
-/// n'est pas traitée une seconde fois.
+/// The list is built before any conversion: an image written in a folder being walked is
+/// not processed a second time.
 pub fn collect(paths: &[PathBuf]) -> (Vec<Job>, usize) {
     let mut seen = HashSet::new();
     let mut jobs = Vec::new();
@@ -56,8 +56,8 @@ pub fn collect(paths: &[PathBuf]) -> (Vec<Job>, usize) {
     (jobs, ignored)
 }
 
-/// Images d'un dossier et de ses sous-dossiers, triées par chemin. Les liens symboliques vers
-/// des dossiers ne sont pas suivis : ils pourraient boucler.
+/// Images of a folder and its subfolders, sorted by path. Symbolic links to folders are
+/// not followed: they could loop.
 pub fn find_images(root: &Path) -> Vec<Job> {
     let mut jobs = Vec::new();
     let mut pending = vec![PathBuf::new()];
@@ -88,8 +88,8 @@ fn is_supported(path: &Path) -> bool {
     INPUT_EXTENSIONS.contains(&conversion::extension(path).as_str())
 }
 
-/// Convertit une image ; avec un dossier de sortie, le résultat va dans le sous-dossier
-/// correspondant à celui de l'image, créé au besoin.
+/// Converts an image; with an output folder, the result goes to the subfolder matching
+/// the image's one, created if needed.
 pub fn convert(job: &Job, options: &ConvertOptions) -> Result<ConversionResult, ConversionError> {
     match &options.output_dir {
         Some(output_dir) if !job.subdir.as_os_str().is_empty() => {
@@ -105,7 +105,7 @@ pub fn convert(job: &Job, options: &ConvertOptions) -> Result<ConversionResult, 
     }
 }
 
-/// Convertit toutes les images, plusieurs à la fois. Les résultats sont dans l'ordre des images.
+/// Converts all the images, several at a time. The results are in the order of the images.
 pub fn convert_all(
     jobs: &[Job],
     options: &ConvertOptions,
@@ -113,8 +113,8 @@ pub fn convert_all(
     convert_all_with(jobs, options.format, |_| options.clone())
 }
 
-/// Comme `convert_all`, avec des options propres à chaque image. `format` règle le nombre de
-/// conversions menées de front.
+/// Like `convert_all`, with options specific to each image. `format` sets the number of
+/// conversions run at the same time.
 pub fn convert_all_with(
     jobs: &[Job],
     format: FormatChoice,
@@ -141,6 +141,6 @@ pub fn convert_all_with(
         .into_inner()
         .unwrap()
         .into_iter()
-        .map(|result| result.expect("chaque image est traitée"))
+        .map(|result| result.expect("every image is processed"))
         .collect()
 }

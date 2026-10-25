@@ -1,65 +1,66 @@
 # Lotpix
 
-**Bulk image optimizer** : une application de bureau pour convertir, compresser et redimensionner des images par lot, écrite en Rust avec [Iced](https://iced.rs).
+**Bulk image optimizer**: a desktop application to convert, compress and resize images in batches, written in Rust with [Iced](https://iced.rs). Available in English, French, Spanish and German.
 
 [![Build and Release](https://github.com/yoanmarchal/lotpix/actions/workflows/release.yml/badge.svg)](https://github.com/yoanmarchal/lotpix/actions/workflows/release.yml)
 
-> **Vous utilisiez Image Converter (version 1, Electron) ?** Lotpix en est la réécriture complète, sous un nouveau nom : il ne se met pas à jour depuis la version 1. Désinstallez l'ancienne version, puis installez la nouvelle depuis les [releases GitHub](https://github.com/yoanmarchal/lotpix/releases). L'historique des conversions n'est pas repris.
+> **Were you using Image Converter (version 1, Electron)?** Lotpix is its complete rewrite, under a new name: it does not update from version 1. Uninstall the old version, then install the new one from the [GitHub releases](https://github.com/yoanmarchal/lotpix/releases). The conversion history is not carried over.
 
-## Fonctionnalités
+## Features
 
-- 🖼️ **Conversion d'images multi-formats**
-  - Formats de sortie : WebP (meilleur rapport qualité/taille), JPEG (compatible partout), PNG (sans perte, avec transparence), AVIF (format moderne haute performance)
-  - « Format d'origine » pour seulement redimensionner ou recompresser (les GIF et TIFF sont alors enregistrés en PNG)
-  - Formats d'entrée : JPEG, PNG, GIF, TIFF, WebP
-  - Orientation EXIF appliquée : les photos prises en portrait restent en portrait
-  - GIF animés conservés en WebP animé
-  - Transparence remplacée par un fond blanc en JPEG
+- 🖼️ **Multi-format image conversion**
+  - Output formats: WebP (best quality/size ratio), JPEG (compatible everywhere), PNG (lossless, with transparency), AVIF (modern high-performance format)
+  - "Original format" to only resize or recompress (GIF and TIFF are then saved as PNG)
+  - Input formats: JPEG, PNG, GIF, TIFF, WebP
+  - EXIF orientation applied: photos taken in portrait stay in portrait
+  - Animated GIFs kept as animated WebP
+  - Transparency replaced by a white background in JPEG
 
-- 📐 **Redimensionnement par lot** (optionnel)
-  - Par largeur, hauteur, côté le plus long ou pourcentage, toujours à proportions conservées
-  - Option « Ne pas agrandir les images plus petites », cochée par défaut
-  - Dimensions finales de chaque image affichées avant la conversion
+- 📐 **Batch resizing** (optional)
+  - By width, height, longest side or percentage, always keeping the proportions
+  - "Do not enlarge smaller images" option, checked by default
+  - Final dimensions of each image shown before the conversion
 
-- ⚙️ **Options de conversion**
-  - Contrôle de la qualité (1 à 100 %, sauf PNG qui est sans perte)
-  - Fichiers convertis à côté des originaux, ou dans un dossier de sortie au choix
-  - Aucun fichier écrasé : si `photo.webp` existe déjà, la sortie devient `photo-1.webp`
+- ⚙️ **Conversion options**
+  - Quality control (1 to 100%, except PNG which is lossless)
+  - Converted files next to the originals, or in an output folder of your choice
+  - No file is overwritten: if `photo.webp` already exists, the output becomes `photo-1.webp`
 
 - 🎯 **Interface**
-  - Glisser-déposer des images, ou ouverture depuis l'Explorateur (« Ouvrir avec »)
-  - Miniatures, suivi de chaque conversion, gain de poids
-  - Mode sombre/clair
-  - En français, anglais, espagnol ou allemand : la langue du système par défaut, ou celle choisie dans l'en-tête. Les tailles, pourcentages et dates suivent les conventions de la langue
+  - Drag and drop images or folders, or open them from the file manager ("Open with")
+  - Thumbnails, progress of each conversion, size saved
+  - Dark/light mode
+  - In English, French, Spanish or German: the system language by default, or the one chosen in the header. Sizes, percentages and dates follow the conventions of the language
 
-- 🖱️ **Menu contextuel** (Explorateur Windows, Dolphin, Nemo)
-  - Sur des images ou des dossiers (sous-dossiers compris), sans ouvrir de fenêtre, avec la qualité recommandée pour chaque format (WebP 80, JPEG 82, AVIF 65, PNG sans perte). Les fichiers sont écrits à côté des originaux, et une notification résume le gain
-  - « Compresser avec Lotpix » : WebP, JPEG, PNG, AVIF ou format d'origine
-  - « Redimensionner avec Lotpix » : tailles standard (4K, Full HD, HD, Web, Miniature, 50 %), en gardant le format d'origine, ou formats des réseaux sociaux (Instagram carré et portrait, Story/Reels/TikTok, Facebook/LinkedIn, X, miniature YouTube, Pinterest), redimensionnés puis recadrés au centre à la taille exacte et écrits en JPEG. Une image plus petite que le cadre est recadrée sans être agrandie
-  - « Ouvrir dans Lotpix » pour choisir d'autres réglages avant de convertir
-  - Sous Windows 11, les entrées sont dans « Afficher plus d'options » (ou Maj + clic droit) ; Nemo n'ayant pas de sous-menus, ses entrées « Compresser… » et « Redimensionner… » font choisir le format ou la taille dans une liste (elles demandent zenity, installé par défaut sur Cinnamon)
-  - En ligne de commande : `lotpix compress --format <format>`, `lotpix resize --size <taille>`, ou `lotpix compress` seul pour les réglages de l'interface (`lotpix --help` liste les tailles)
+- 🖱️ **Context menu** (Windows Explorer, Dolphin, Nemo)
+  - On images or folders (subfolders included), without opening a window, with the recommended quality for each format (WebP 80, JPEG 82, AVIF 65, lossless PNG). Files are written next to the originals, and a notification sums up the saving
+  - "Compress with Lotpix": WebP, JPEG, PNG, AVIF or original format
+  - "Resize with Lotpix": standard sizes (4K, Full HD, HD, Web, Thumbnail, 50%), keeping the original format, or social network formats (Instagram square and portrait, Story/Reels/TikTok, Facebook/LinkedIn, X, YouTube thumbnail, Pinterest), resized then cropped to the center at the exact size and saved as JPEG. An image smaller than the frame is cropped without being enlarged
+  - "Open in Lotpix" to choose other settings before converting
+  - On Windows 11, the entries are under "Show more options" (or Shift + right-click). The labels use the language chosen at installation. Nemo has no submenus, so its "Compress…" and "Resize…" entries let you pick the format or the size in a list (they need zenity, installed by default on Cinnamon)
+  - From the command line: `lotpix compress --format <format>`, `lotpix resize --size <size>`, or `lotpix compress` alone for the interface settings (`lotpix --help` lists the sizes)
 
-- 📊 **Historique des conversions**
-  - Les 100 dernières conversions, avec poids et dimensions avant et après
-  - Accès rapide aux fichiers convertis
+- 📊 **Conversion history**
+  - The last 100 conversions, with size and dimensions before and after
+  - Quick access to the converted files
 
-- 🔔 **Nouvelles versions signalées**
-  - Au démarrage, l'application interroge les releases GitHub en tâche de fond et affiche un bandeau si une version plus récente existe
-  - Le bouton « Télécharger » ouvre la page de la release : l'installation reste manuelle
-  - Désactivable par la case « Vérifier les mises à jour » en bas de la fenêtre ; c'est le seul accès réseau de l'application
+- 🔔 **New versions announced**
+  - At startup, the application checks the GitHub releases in the background and shows a banner if a newer version exists
+  - The "Download" button opens the release page: installation stays manual
+  - Can be turned off with the "Check for updates" checkbox at the bottom of the window; it is the only network access of the application
 
-## Technologies utilisées
+## Built with
 
 - Rust
-- [Iced](https://iced.rs) pour l'interface, sans navigateur embarqué
-- [`image`](https://crates.io/crates/image), [`webp`](https://crates.io/crates/webp), [`jpeg-encoder`](https://crates.io/crates/jpeg-encoder) et [`ravif`](https://crates.io/crates/ravif) pour les codecs
-- [`fast_image_resize`](https://crates.io/crates/fast_image_resize) pour le redimensionnement
-- [`cargo-packager`](https://crates.io/crates/cargo-packager) pour les installeurs
+- [Iced](https://iced.rs) for the interface, without an embedded browser
+- [`image`](https://crates.io/crates/image), [`webp`](https://crates.io/crates/webp), [`jpeg-encoder`](https://crates.io/crates/jpeg-encoder) and [`ravif`](https://crates.io/crates/ravif) for the codecs
+- [`fast_image_resize`](https://crates.io/crates/fast_image_resize) for resizing
+- [Fluent](https://projectfluent.org) ([`i18n-embed`](https://crates.io/crates/i18n-embed)) for the translations
+- [`cargo-packager`](https://crates.io/crates/cargo-packager) for the installers
 
-## Développement
+## Development
 
-Prérequis : [Rust](https://rustup.rs) stable (édition 2024, donc Rust 1.85 ou plus récent). Sous Windows, les outils de build C++ de Visual Studio sont nécessaires pour compiler libwebp.
+Requirements: stable [Rust](https://rustup.rs) (edition 2024, so Rust 1.85 or later). On Windows, the Visual Studio C++ build tools are needed to compile libwebp.
 
 ```bash
 git clone https://github.com/yoanmarchal/lotpix.git
@@ -67,59 +68,64 @@ cd lotpix
 cargo run --release
 ```
 
-## Commandes disponibles
+## Available commands
 
-- `cargo run --release` - Lance l'application
-- `cargo test` - Lance les tests ; le rendu de chaque écran est aussi écrit dans `target/captures/`
-- `cargo fmt` et `cargo clippy --all-targets` - Formate et vérifie le code
-- `cargo packager --release --formats nsis` - Construit l'installeur Windows dans `release/`
-- `cargo packager --release --formats deb,appimage` - Construit les paquets Linux dans `release/`
-- `cargo run --release --example compare -- <dossier de sortie> <images…>` - Mesure le temps et le poids de sortie de chaque format
-- `LOTPIX_UPDATE_MENUS=1 cargo test` - Régénère les menus contextuels (bloc NSIS de `Cargo.toml`, fichiers Dolphin et Nemo) après un changement des traductions ou des préréglages ; sans la variable, `cargo test` échoue s'ils ne sont plus à jour
+- `cargo run --release` - Runs the application
+- `cargo test` - Runs the tests; the rendering of each screen is also written to `target/captures/`, in light and dark and in each language
+- `cargo fmt` and `cargo clippy --all-targets` - Formats and checks the code
+- `cargo packager --release --formats nsis` - Builds the Windows installer in `release/`
+- `cargo packager --release --formats deb,appimage` - Builds the Linux packages in `release/`
+- `cargo run --release --example compare -- <output folder> <images…>` - Measures the time and output size of each format
+- `LOTPIX_UPDATE_MENUS=1 cargo test` - Regenerates the context menus (NSIS block of `Cargo.toml`, Dolphin and Nemo files) after a change to the translations or the presets; without the variable, `cargo test` fails if they are out of date
 
-Les deux commandes de packaging demandent `cargo install cargo-packager --locked`.
+Both packaging commands need `cargo install cargo-packager --locked`.
 
-## Organisation du code
+## Code layout
 
-- `src/conversion.rs` - Conversion et redimensionnement, sans dépendance à l'interface
-- `src/history.rs`, `src/preferences.rs`, `src/storage.rs` - Données enregistrées dans le dossier de l'utilisateur
-- `src/i18n.rs`, `i18n/<langue>/lotpix.ftl` - Langue de l'application et traductions [Fluent](https://projectfluent.org) ; l'anglais sert de référence, et les traductions espagnole et allemande restent à faire relire
-- `src/format.rs` - Mise en forme des tailles, pourcentages et dates selon la langue
-- `src/presets.rs`, `src/cli.rs`, `src/context_menu.rs` - Préréglages et ligne de commande du menu contextuel, et génération des fichiers de ce menu
-- `src/update.rs` - Recherche d'une version plus récente dans les releases GitHub
-- `src/ui/` - Interface Iced : état et messages (`mod.rs`), thème (`theme.rs`), écrans (`convert.rs`, `history.rs`)
-- `tests/conversion.rs` - Tests de conversion sur de vraies images
+- `src/conversion.rs` - Conversion and resizing, independent of the interface
+- `src/batch.rs`, `src/queue.rs` - Batches of files and folders, and grouping of the processes started together by Windows Explorer
+- `src/settings.rs`, `src/history.rs`, `src/preferences.rs`, `src/storage.rs` - Data saved in the user's folder
+- `src/i18n.rs`, `i18n/<language>/lotpix.ftl` - Application language and [Fluent](https://projectfluent.org) translations; English is the reference, and the Spanish and German translations still need a review by native speakers
+- `src/format.rs` - Formatting of sizes, percentages and dates in each language
+- `src/presets.rs`, `src/cli.rs`, `src/context_menu.rs` - Context menu presets and command line, and generation of the context menu files
+- `src/update.rs` - Check for a newer version in the GitHub releases
+- `src/ui/` - Iced interface: state and messages (`mod.rs`), theme (`theme.rs`), screens (`convert.rs`, `history.rs`)
+- `tests/` - Conversion and batch tests on real images
 
-## Publier une version
+## Translations
 
-Modifiez `version` dans `Cargo.toml` et fusionnez sur `main` : le workflow crée le tag `vX.Y.Z`, la release GitHub et y dépose les installeurs Windows et Linux.
+Each language is a [Fluent](https://projectfluent.org) file in `i18n/<language>/lotpix.ftl`. To fix a translation, edit the file of the language, then run `LOTPIX_UPDATE_MENUS=1 cargo test` to update the context menus. To add a language, copy `i18n/en/lotpix.ftl` and add the language to `src/i18n.rs`: a test checks that every language has exactly the keys of the English file.
 
-Sous Windows, le workflow attend deux validations dans SignPath (l'application, puis l'installeur), pendant une heure au plus chacune. Il faut pour cela le secret `SIGNPATH_API_TOKEN` et les variables `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_PROJECT_SLUG` et `SIGNPATH_SIGNING_POLICY_SLUG` dans les réglages du dépôt ; sans le secret, l'installeur est publié sans signature. Les configurations d'artefacts à créer dans SignPath sont dans [`.signpath/artifact-configurations/`](.signpath/artifact-configurations/), sous les noms `executable` et `installer`.
+## Publishing a version
 
-## Configuration système requise
+Change `version` in `Cargo.toml` and merge into `main`: the workflow creates the `vX.Y.Z` tag and the GitHub release, and uploads the Windows and Linux installers to it.
+
+On Windows, the workflow waits for two approvals in SignPath (the application, then the installer), for at most one hour each. This needs the `SIGNPATH_API_TOKEN` secret and the `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_PROJECT_SLUG` and `SIGNPATH_SIGNING_POLICY_SLUG` variables in the repository settings; without the secret, the installer is published unsigned. The artifact configurations to create in SignPath are in [`.signpath/artifact-configurations/`](.signpath/artifact-configurations/), named `executable` and `installer`.
+
+## System requirements
 
 ### Windows
-- Windows 10 ou plus récent
-- Architecture x64
+- Windows 10 or later
+- x64 architecture
 
 ### Linux
-- Ubuntu 22.04 ou plus récent, ou distribution équivalente
-- Architecture x64 ou arm64
+- Ubuntu 22.04 or later, or an equivalent distribution
+- x64 or arm64 architecture
 
 ## Code signing policy
 
 Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
 
-Les exécutables Windows (`lotpix.exe` et l'installeur) sont compilés et signés par le workflow GitHub Actions [`release.yml`](.github/workflows/release.yml), à partir du code de ce dépôt. Chaque signature est validée à la main avant d'être appliquée.
+The Windows executables (`lotpix.exe` and the installer) are built and signed by the [`release.yml`](.github/workflows/release.yml) GitHub Actions workflow, from the code of this repository. Each signature is approved by hand before it is applied.
 
-Équipe :
-- Auteurs et relecteurs : [Yoan Marchal](https://github.com/yoanmarchal)
-- Approbateurs des signatures : [Yoan Marchal](https://github.com/yoanmarchal)
+Team:
+- Committers and reviewers: [Yoan Marchal](https://github.com/yoanmarchal)
+- Approvers: [Yoan Marchal](https://github.com/yoanmarchal)
 
-### Confidentialité
+### Privacy
 
-Lotpix traite les images sur l'ordinateur : aucune image, aucun nom de fichier ni aucune donnée d'utilisation n'est envoyé. Le seul accès réseau est la vérification des nouvelles versions au démarrage, qui interroge l'API des releases GitHub ; elle se désactive par la case « Vérifier les mises à jour » en bas de la fenêtre. Cette requête est soumise à la [politique de confidentialité de GitHub](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
+Lotpix processes images on your computer: no image, file name or usage data is sent. The only network access is the check for new versions at startup, which reads the address of the latest release page on GitHub; it can be turned off with the "Check for updates" checkbox at the bottom of the window. This request is subject to the [GitHub privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
 
 ## License
 
-[MIT](LICENSE) © Yoan Marchal. La police [Inter](https://rsms.me/inter/) est distribuée sous licence SIL Open Font License (`assets/fonts/Inter-LICENSE.txt`).
+[MIT](LICENSE) © Yoan Marchal. The [Inter](https://rsms.me/inter/) font is distributed under the SIL Open Font License (`assets/fonts/Inter-LICENSE.txt`).

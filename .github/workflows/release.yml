@@ -1,7 +1,7 @@
 name: Build and Release
 
 on:
-  # Chaque merge dans main publie une release, une fois la CI passée
+  # Every merge into main publishes a release, once the CI has passed
   workflow_run:
     workflows: [CI]
     types: [completed]
@@ -13,7 +13,7 @@ on:
 permissions:
   contents: write
 
-# Deux merges rapprochés ne doivent pas calculer la même version
+# Two merges close together must not compute the same version
 concurrency:
   group: release
   cancel-in-progress: false
@@ -24,7 +24,7 @@ env:
 
 jobs:
   check-tag:
-    # Seulement après une CI réussie sur un push dans main (pas sur une PR)
+    # Only after a successful CI on a push to main (not on a PR)
     if: >-
       github.event_name == 'push' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
@@ -51,7 +51,7 @@ jobs:
             exit 0
           fi
 
-          # Un merge plus récent est arrivé : c'est sa CI qui publiera, avec tous les changements
+          # A more recent merge arrived: its CI will publish, with all the changes
           if [[ "$(git rev-parse origin/main)" != "$HEAD_SHA" ]]; then
             echo "main has moved past $HEAD_SHA. Skipping."
             echo "should_release=false" >> $GITHUB_OUTPUT
@@ -59,7 +59,7 @@ jobs:
           fi
 
           LAST_TAG=$(git describe --tags --abbrev=0 --match 'v*.*.*' 2>/dev/null || true)
-          # La CI, la signature, Renovate et la doc ne changent rien pour l'utilisateur
+          # The CI, signing, Renovate and docs change nothing for the user
           if [[ -n "$LAST_TAG" ]] && ! git diff --name-only "$LAST_TAG" HEAD \
               | grep -qvE '^(\.github/|\.claude/|\.signpath/|renovate\.json$|.*\.md$)'; then
             echo "No app changes since $LAST_TAG. No new release."
@@ -71,7 +71,7 @@ jobs:
           git config user.email "actions@github.com"
 
           VERSION=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
-          # Version déjà publiée : on monte le patch. Une version montée à la main est gardée telle quelle
+          # Version already published: bump the patch. A version bumped by hand is kept as is
           if git rev-parse "v$VERSION" >/dev/null 2>&1; then
             IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION"
             NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
@@ -94,7 +94,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.check.outputs.tag }}
-        # Créée une seule fois ici : les trois builds ne font ensuite qu'y déposer leurs fichiers
+        # Created only once here: the three builds then only upload their files to it
         run: |
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --title "$TAG" --generate-notes
@@ -110,7 +110,7 @@ jobs:
         include:
           - os: windows-latest
             formats: nsis
-          # Ubuntu 22.04 : les binaires restent compatibles avec les glibc plus anciennes
+          # Ubuntu 22.04: the binaries stay compatible with older glibc versions
           - os: ubuntu-22.04
             formats: deb,appimage
           - os: ubuntu-22.04-arm
@@ -119,17 +119,17 @@ jobs:
       run:
         shell: bash
     env:
-      # Signature Windows par SignPath Foundation (voir le README, « Politique de signature »).
-      # Sans le secret, par exemple dans un fork, la release est publiée sans signature.
-      # Pas de variable nommée SIGN : linuxdeploy tente une signature GPG de l'AppImage dès
-      # qu'elle existe, même à « false »
+      # Windows signing by SignPath Foundation (see the README, "Code signing policy").
+      # Without the secret, for example in a fork, the release is published unsigned.
+      # No variable named SIGN: linuxdeploy attempts a GPG signature of the AppImage as soon
+      # as it exists, even set to "false"
       SIGNPATH_SIGNING: ${{ matrix.os == 'windows-latest' && secrets.SIGNPATH_API_TOKEN != '' }}
 
     steps:
       - name: Check out Git repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # Le tag inclut le commit de version créé par check-tag
+          # The tag includes the version commit created by check-tag
           ref: ${{ needs.check-tag.outputs.tag }}
 
       - name: Read version
@@ -138,8 +138,8 @@ jobs:
           TAG: ${{ needs.check-tag.outputs.tag }}
         run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
-      # rust-cache met dans sa clé toutes les toolchains installées : sans ce nettoyage, le Rust
-      # préinstallé sur l'image du runner (qui varie d'une machine à l'autre) invalide le cache
+      # rust-cache puts every installed toolchain in its key: without this cleanup, the Rust
+      # preinstalled on the runner image (which varies from one machine to another) invalidates the cache
       - name: Keep only the pinned toolchain
         run: |
           rustc -V
@@ -151,16 +151,16 @@ jobs:
       - name: Cache Rust build
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
-          # Même clé que la CI : la release repart de la compilation --release que la CI de main vient de faire
+          # Same key as the CI: the release starts from the --release build the main CI just did
           shared-key: build
-          # Seul ARM, absent de la CI, a besoin d'écrire son propre cache
+          # Only ARM, absent from the CI, needs to write its own cache
           save-if: ${{ matrix.os == 'ubuntu-22.04-arm' }}
 
       - name: Install cargo-packager
         run: cargo install cargo-packager --locked --version "$CARGO_PACKAGER_VERSION"
 
-      # Sous Windows, lotpix.exe est signé avant d'entrer dans l'installeur, puis l'installeur
-      # lui-même. Chaque signature attend la validation manuelle de la release dans SignPath
+      # On Windows, lotpix.exe is signed before going into the installer, then the installer
+      # itself. Each signature waits for the manual approval of the release in SignPath
       - name: Build application
         if: env.SIGNPATH_SIGNING == 'true'
         run: cargo build --release
@@ -187,7 +187,7 @@ jobs:
           github-artifact-id: ${{ steps.unsigned-app.outputs.artifact-id }}
           parameters: |
             version: "${{ steps.version.outputs.version }}"
-          # Le temps de valider la release dans SignPath
+          # Time to approve the release in SignPath
           wait-for-completion-timeout-in-seconds: 3600
           output-artifact-directory: signed-app
 
@@ -198,14 +198,14 @@ jobs:
       - name: Build installers
         run: cargo packager --release --formats "${{ matrix.formats }}"
 
-      # cargo-packager recompile avant d'empaqueter : l'exécutable recompilé ne serait plus signé
+      # cargo-packager rebuilds before packaging: a rebuilt executable would no longer be signed
       - name: Check the packaged application is signed
         if: env.SIGNPATH_SIGNING == 'true'
         shell: pwsh
         run: |
           $signature = Get-AuthenticodeSignature target/release/lotpix.exe
           if ($signature.Status -ne 'Valid') {
-            throw "lotpix.exe n'est plus signé : $($signature.Status)"
+            throw "lotpix.exe is no longer signed: $($signature.Status)"
           }
 
       - name: Upload installer for signing
@@ -245,7 +245,7 @@ jobs:
           shopt -s nullglob
           gh release upload "$TAG" release/*.exe release/*.deb release/*.AppImage --clobber
 
-  # Le site vit sur la branche gh-pages : son déploiement relit la dernière release publiée
+  # The site lives on the gh-pages branch: its deployment reads the latest published release
   update-site:
     needs: [check-tag, release]
     if: needs.check-tag.outputs.should_release == 'true'

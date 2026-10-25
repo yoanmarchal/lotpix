@@ -1,9 +1,9 @@
-// Regroupement des fichiers reçus par des processus lancés ensemble : l'Explorateur Windows
-// lance une fois l'application par fichier sélectionné dans le menu contextuel
+// Groups the files received by processes started together: Windows Explorer starts the
+// application once per file selected in the context menu
 //
-// Chaque processus dépose ses chemins dans le dossier de la file, puis tente de prendre le
-// verrou. Celui qui l'obtient attend que les dépôts cessent et traite tout ; les autres
-// s'arrêtent sans rien faire.
+// Each process drops its paths in the queue folder, then tries to take the lock. The one
+// that gets it waits until the drops stop and processes everything; the others exit
+// without doing anything.
 use std::fs::{self, File, TryLockError};
 use std::io;
 use std::path::{Path, PathBuf};
@@ -15,16 +15,16 @@ use crate::storage;
 const LOCK_FILE: &str = "lock";
 const ENTRY_EXTENSION: &str = "json";
 
-/// Les dépôts sont jugés terminés quand aucun n'arrive pendant ce délai.
+/// The drops are considered finished when none arrives during this delay.
 const SETTLE_DELAY: Duration = Duration::from_millis(400);
-/// Attente maximale des dépôts : au-delà, les retardataires forment un nouveau lot.
+/// Maximum wait for drops: beyond it, the latecomers form a new batch.
 const MAX_WAIT: Duration = Duration::from_secs(5);
-/// Un dépôt plus ancien vient d'un processus interrompu avant d'être traité : il est jeté
-/// plutôt que de compresser des images sélectionnées il y a longtemps.
+/// An older drop comes from a process interrupted before it was processed: it is discarded
+/// rather than compressing images selected long ago.
 const STALE_AFTER: Duration = Duration::from_secs(60);
 
-/// Chemins de tous les processus regroupés si celui-ci est chargé de les traiter, ou liste
-/// vide si un autre processus s'en occupe.
+/// Paths of all the grouped processes if this one is in charge of processing them, or an
+/// empty list if another process takes care of it.
 pub fn gather(dir: &Path, paths: &[PathBuf]) -> io::Result<Vec<PathBuf>> {
     gather_with(dir, paths, SETTLE_DELAY)
 }
@@ -38,7 +38,7 @@ fn gather_with(dir: &Path, paths: &[PathBuf], settle_delay: Duration) -> io::Res
         let lock = File::create(dir.join(LOCK_FILE))?;
         match lock.try_lock() {
             Ok(()) => {}
-            // Le processus qui tient le verrou lira notre dépôt
+            // The process holding the lock will read our drop
             Err(TryLockError::WouldBlock) => return Ok(gathered),
             Err(TryLockError::Error(error)) => return Err(error),
         }
@@ -46,8 +46,8 @@ fn gather_with(dir: &Path, paths: &[PathBuf], settle_delay: Duration) -> io::Res
         gathered.extend(drain(dir)?);
         drop(lock);
 
-        // Un dépôt arrivé entre la lecture et la libération du verrou n'a pas trouvé de
-        // processus pour le traiter : on recommence plutôt que de l'abandonner
+        // A drop that arrived between the read and the release of the lock found no process to
+        // handle it: start again rather than abandon it
         if entries(dir)?.is_empty() {
             return Ok(gathered);
         }
@@ -56,7 +56,7 @@ fn gather_with(dir: &Path, paths: &[PathBuf], settle_delay: Duration) -> io::Res
 
 fn enqueue(dir: &Path, paths: &[PathBuf]) -> io::Result<()> {
     let name = format!("{}.{ENTRY_EXTENSION}", std::process::id());
-    // Écriture puis renommage : le dépôt n'est jamais lu à moitié écrit
+    // Write then rename: the drop is never read half-written
     storage::save(&dir.join(name), paths)
 }
 
@@ -87,7 +87,7 @@ fn wait_until_settled(dir: &Path, settle_delay: Duration) {
     }
 }
 
-/// Lit et supprime les dépôts, du plus ancien processus au plus récent.
+/// Reads and deletes the drops, from the oldest process to the most recent.
 fn drain(dir: &Path) -> io::Result<Vec<PathBuf>> {
     let mut entries: Vec<(SystemTime, PathBuf)> = entries(dir)?
         .into_iter()
@@ -132,7 +132,7 @@ mod tests {
     #[test]
     fn the_lock_holder_collects_the_other_deposits() {
         let dir = tempfile::tempdir().unwrap();
-        // Dépôt d'un autre processus, arrivé juste avant
+        // Drop from another process, arrived just before
         storage::save(
             &dir.path().join("1.json"),
             &[PathBuf::from("/images/a.png")],

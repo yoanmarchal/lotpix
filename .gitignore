@@ -9,8 +9,8 @@
 # Rust build output
 target
 
-# Dépendances Node du site (hugo-site)
+# Node dependencies of the site (hugo-site)
 node_modules
 
-# Installeurs produits par cargo packager
+# Installers produced by cargo packager
 release

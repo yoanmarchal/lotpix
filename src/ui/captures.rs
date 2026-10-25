@@ -1,6 +1,6 @@
-// Rendu hors écran de chaque écran, en clair et en sombre. Les images sont écrites dans
-// target/captures pour la revue visuelle ; le test vérifie que tout se dessine sans erreur
-// et que les boutons envoient les bons messages.
+// Off-screen rendering of each screen, in light and dark. The images are written to
+// target/captures for visual review; the test checks that everything draws without error
+// and that the buttons send the right messages.
 use std::path::PathBuf;
 
 use chrono::{TimeZone, Utc};
@@ -11,7 +11,7 @@ use iced_test::simulator::Simulator;
 use super::*;
 
 const WINDOW: Size = Size::new(1000.0, 700.0);
-// Dossier fictif des images d'exemple : rien n'est lu ni écrit sur le disque
+// Fictitious folder of the sample images: nothing is read from or written to the disk
 const SAMPLE_DIR: &str = "/photos";
 
 fn settings() -> Settings {
@@ -41,18 +41,18 @@ fn captures_dir() -> PathBuf {
 
 fn capture(app: &App, name: &str) {
     let mut ui = Simulator::with_size(settings(), WINDOW, app.view());
-    let snapshot = ui.snapshot(&app.theme()).expect("rendu de l'interface");
+    let snapshot = ui.snapshot(&app.theme()).expect("interface rendering");
     assert!(
         snapshot
             .matches_image(captures_dir().join(name))
-            .expect("écriture de la capture")
+            .expect("capture written")
     );
 }
 
 fn messages(app: &App, label: &str) -> Vec<Message> {
     let mut ui = Simulator::with_size(settings(), WINDOW, app.view());
     ui.click(label)
-        .unwrap_or_else(|_| panic!("« {label} » introuvable"));
+        .unwrap_or_else(|_| panic!("\"{label}\" not found"));
     ui.into_messages().collect()
 }
 
@@ -67,7 +67,7 @@ fn app(dark_mode: bool) -> (App, tempfile::TempDir) {
     (App::with_data_dir(dir.path()), dir)
 }
 
-// Dégradé de couleur en guise de miniature
+// Color gradient used as a thumbnail
 fn thumbnail(hue: u8) -> image::Handle {
     let pixels = (0..THUMBNAIL_SIZE * THUMBNAIL_SIZE)
         .flat_map(|index| {
@@ -105,10 +105,10 @@ fn sample_images() -> Vec<ImageEntry> {
     vec![
         entry(
             0,
-            "vacances-plage.jpg",
+            "beach-holiday.jpg",
             2_818_000,
             (4000, 3000),
-            Status::Converted(result("vacances-plage.webp", 212_400, (1920, 1440))),
+            Status::Converted(result("beach-holiday.webp", 212_400, (1920, 1440))),
         ),
         entry(
             1,
@@ -119,25 +119,25 @@ fn sample_images() -> Vec<ImageEntry> {
         ),
         entry(
             2,
-            "panorama-montagne.tiff",
+            "mountain-panorama.tiff",
             48_120_000,
             (8000, 3000),
             Status::Converting,
         ),
         entry(
             3,
-            "un-nom-de-fichier-vraiment-tres-long-pour-verifier-la-troncature-dans-la-liste.jpg",
+            "a-really-very-long-file-name-to-check-that-it-is-truncated-in-the-list.jpg",
             1_250_000,
             (3000, 4000),
             Status::Pending,
         ),
-        entry(4, "icone.png", 4_096, (512, 512), Status::Pending),
+        entry(4, "icon.png", 4_096, (512, 512), Status::Pending),
         entry(
             5,
-            "scan-abime.gif",
+            "damaged-scan.gif",
             820_000,
             (1200, 900),
-            Status::Failed("Image illisible : fin de fichier inattendue".to_owned()),
+            Status::Failed(t!("error-decode", error = "unexpected end of file")),
         ),
     ]
 }
@@ -145,8 +145,8 @@ fn sample_images() -> Vec<ImageEntry> {
 fn fill_history(app: &mut App) {
     let conversions = [
         (
-            "vacances-plage.jpg",
-            "vacances-plage.webp",
+            "beach-holiday.jpg",
+            "beach-holiday.webp",
             212_400,
             (1920, 1440),
         ),
@@ -158,8 +158,8 @@ fn fill_history(app: &mut App) {
         ),
         ("portrait.jpeg", "portrait.avif", 96_000, (4000, 3000)),
         (
-            "capture-ecran.png",
-            "capture-ecran-1.png",
+            "screenshot.png",
+            "screenshot-1.png",
             1_900_000,
             (2000, 1500),
         ),
@@ -181,33 +181,33 @@ fn fill_history(app: &mut App) {
 fn renders_every_screen_in_light_and_dark() {
     let _ = std::fs::remove_dir_all(captures_dir());
 
-    for (dark_mode, suffix) in [(false, "clair"), (true, "sombre")] {
+    for (dark_mode, suffix) in [(false, "light"), (true, "dark")] {
         let (mut app, _dir) = app(dark_mode);
-        capture(&app, &format!("1-vide-{suffix}"));
+        capture(&app, &format!("1-empty-{suffix}"));
 
         app.images = sample_images();
         app.images[2].status = Status::Pending;
         app.settings.resize_enabled = true;
         app.settings.output_dir = Some(PathBuf::from(format!("{SAMPLE_DIR}/converted")));
         app.notice = Some(t!("notice-ignored-files", count = 2));
-        capture(&app, &format!("2-liste-{suffix}"));
+        capture(&app, &format!("2-list-{suffix}"));
 
         app.settings.resize_value = String::new();
-        capture(&app, &format!("3-taille-invalide-{suffix}"));
+        capture(&app, &format!("3-invalid-size-{suffix}"));
 
         app.settings.resize_value = DEFAULT_RESIZE_PIXELS.to_owned();
         app.images = sample_images();
         app.is_converting = true;
         app.batch = (2, 5);
         app.notice = None;
-        capture(&app, &format!("4-conversion-{suffix}"));
+        capture(&app, &format!("4-converting-{suffix}"));
 
         app.is_converting = false;
         app.tab = Tab::History;
-        capture(&app, &format!("5-historique-vide-{suffix}"));
+        capture(&app, &format!("5-empty-history-{suffix}"));
 
         fill_history(&mut app);
-        capture(&app, &format!("6-historique-{suffix}"));
+        capture(&app, &format!("6-history-{suffix}"));
 
         app.is_confirming_clear = true;
         capture(&app, &format!("7-confirmation-{suffix}"));
@@ -215,12 +215,12 @@ fn renders_every_screen_in_light_and_dark() {
         app.is_confirming_clear = false;
         app.tab = Tab::Convert;
         app.available_update = Version::parse("2.1.0");
-        capture(&app, &format!("8-mise-a-jour-{suffix}"));
+        capture(&app, &format!("8-update-{suffix}"));
     }
 }
 
-/// Les textes changent de longueur d'une langue à l'autre : les écrans les plus chargés sont
-/// rendus dans chaque langue pour repérer un texte coupé ou qui déborde.
+/// Texts change length from one language to another: the busiest screens are rendered in
+/// each language to spot a text that is cut or overflows.
 #[test]
 fn renders_the_busiest_screens_in_every_language() {
     for language in Language::ALL {
@@ -230,19 +230,19 @@ fn renders_the_busiest_screens_in_every_language() {
         app.images = sample_images();
         app.settings.resize_enabled = true;
         app.notice = Some(t!("notice-ignored-files", count = 2));
-        capture(&app, &format!("9-langue-{code}-liste"));
+        capture(&app, &format!("9-language-{code}-list"));
 
         app.notice = None;
         app.is_converting = true;
         app.batch = (2, 5);
         app.available_update = Version::parse("2.1.0");
-        capture(&app, &format!("9-langue-{code}-conversion"));
+        capture(&app, &format!("9-language-{code}-converting"));
 
         app.is_converting = false;
         app.tab = Tab::History;
         fill_history(&mut app);
         app.is_confirming_clear = true;
-        capture(&app, &format!("9-langue-{code}-historique"));
+        capture(&app, &format!("9-language-{code}-history"));
     }
 }
 
@@ -263,7 +263,7 @@ fn buttons_send_the_expected_messages() {
         messages(&app, "Tout retirer")[..],
         [Message::RemoveAllImages]
     ));
-    // Le bouton est dans la zone de dépôt cliquable : un seul sélecteur doit s'ouvrir
+    // The button is inside the clickable drop zone: a single picker must open
     assert!(matches!(
         messages(&app, "Choisir des images")[..],
         [Message::SelectFiles]

@@ -1,4 +1,4 @@
-// Conversion et redimensionnement d'images, sans dépendance à l'interface (testable avec cargo test)
+// Image conversion and resizing, independent of the interface (testable with cargo test)
 use std::fmt;
 use std::fs::{self, File, Metadata, OpenOptions};
 use std::io::{self, BufReader, Cursor, Write};
@@ -20,31 +20,31 @@ use thiserror::Error;
 use crate::animated_webp::AnimatedWebpEncoder;
 use crate::t;
 
-// L'AVIF n'est pas accepté en entrée : il est déjà optimisé, et son décodage imposerait dav1d
+// AVIF is not accepted as input: it is already optimized, and decoding it would require dav1d
 pub const INPUT_EXTENSIONS: [&str; 7] = ["jpg", "jpeg", "png", "gif", "tif", "tiff", "webp"];
 
-// Côté du carré affiché dans la liste (48 px), doublé pour les écrans haute densité
+// Side of the square shown in the list (48 px), doubled for high-density screens
 pub const THUMBNAIL_SIZE: u32 = 96;
 
 pub const MAX_RESIZE_PIXELS: u32 = 16_384;
 pub const MAX_RESIZE_PERCENT: u32 = 400;
 
-// Un agrandissement au-delà de 512 Mio de pixels RGBA est refusé plutôt que tenté : c'est aussi
-// la limite appliquée au décodage
+// An upscale beyond 512 MiB of RGBA pixels is refused rather than attempted: it is also the
+// limit applied when decoding
 const MAX_OUTPUT_PIXELS: u64 = 512 * 1024 * 1024 / 4;
 
-// Une photo de 50 mégapixels décodée occupe 200 Mo, et autant pendant son redimensionnement
+// A decoded 50-megapixel photo takes 200 MB, and as much again while it is resized
 const MAX_PARALLEL_CONVERSIONS: usize = 4;
 
 const MIN_FRAME_DELAY_MS: u32 = 10;
 const DEFAULT_FRAME_DELAY_MS: u32 = 100;
 
-/// Erreur de conversion. Le message est traduit dans la langue courante au moment où il est
-/// affiché (voir `Display`).
+/// Conversion error. The message is translated into the current language when it is displayed
+/// (see `Display`).
 #[derive(Debug, Error)]
 pub enum ConversionError {
     InvalidPath,
-    /// Extension avec son point (« .bmp »), ou vide pour un fichier sans extension.
+    /// Extension with its dot (".bmp"), or empty for a file without an extension.
     UnsupportedExtension(String),
     SourceNotFound(PathBuf),
     NotAFile(PathBuf),
@@ -97,8 +97,8 @@ impl fmt::Display for ConversionError {
                     unit = unit.to_string()
                 )
             }
-            // Les nombres sont passés en texte : Fluent les écrirait sinon avec les séparateurs
-            // de milliers, absents des messages d'origine
+            // Numbers are passed as text: Fluent would otherwise add thousands separators, which
+            // the original messages do not have
             Self::TooLarge {
                 width,
                 height,
@@ -121,7 +121,7 @@ impl fmt::Display for ConversionError {
             Self::Decode(error) => t!("error-decode", error = error.to_string()),
             Self::Resize(error) => t!("error-resize", error = error.as_str()),
             Self::Encode(error) => t!("error-encode", error = error.as_str()),
-            // Message du système d'exploitation, déjà dans la langue de l'utilisateur
+            // Operating system message, already in the user's language
             Self::Io(error) => return fmt::Display::fmt(error, formatter),
         };
         formatter.write_str(&message)
@@ -158,7 +158,7 @@ impl OutputFormat {
         }
     }
 
-    /// Plus grand côté que le format sait stocker.
+    /// Largest side the format can store.
     fn max_dimension(self) -> u32 {
         match self {
             Self::Webp => 16_383,
@@ -171,7 +171,7 @@ impl OutputFormat {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FormatChoice {
-    /// Garde le format du fichier source (utile pour seulement redimensionner).
+    /// Keeps the format of the source file (useful to only resize).
     Original,
     Fixed(OutputFormat),
 }
@@ -183,7 +183,7 @@ impl FormatChoice {
             Self::Original => match extension(path).as_str() {
                 "jpg" | "jpeg" => OutputFormat::Jpg,
                 "webp" => OutputFormat::Webp,
-                // Le GIF et le TIFF ne sont pas des formats de sortie : repli sans perte
+                // GIF and TIFF are not output formats: lossless fallback
                 _ => OutputFormat::Png,
             },
         }
@@ -199,13 +199,13 @@ pub enum ResizeMode {
     Percent,
 }
 
-/// Redimensionnement à ratio conservé.
+/// Resizing that keeps the aspect ratio.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Resize {
     pub mode: ResizeMode,
-    /// Pixels, ou pourcentage en mode `Percent`.
+    /// Pixels, or a percentage in `Percent` mode.
     pub value: u32,
-    /// Sans cette option, une image plus petite que la cible garde sa taille.
+    /// Without this option, an image smaller than the target keeps its size.
     pub allow_upscale: bool,
 }
 
@@ -223,8 +223,8 @@ impl Resize {
     }
 }
 
-/// Taille exacte imposée, par exemple 1080 × 1350 pour Instagram : l'image est redimensionnée
-/// pour couvrir le cadre, puis recadrée au centre.
+/// Exact required size, for example 1080 × 1350 for Instagram: the image is resized to cover
+/// the frame, then cropped to the center.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Frame {
     pub width: u32,
@@ -245,9 +245,8 @@ impl Frame {
     }
 }
 
-/// Dimensions de sortie d'une image de `width` × `height` pixels recadrée sur `frame`. Une
-/// image trop petite pour le cadre n'est pas agrandie : elle est seulement recadrée aux mêmes
-/// proportions que lui.
+/// Output dimensions of a `width` × `height` image cropped to `frame`. An image too small for
+/// the frame is not enlarged: it is only cropped to the same proportions.
 pub fn frame_dimensions(width: u32, height: u32, frame: &Frame) -> (u32, u32) {
     let scale = (f64::from(frame.width) / f64::from(width))
         .max(f64::from(frame.height) / f64::from(height));
@@ -258,7 +257,7 @@ pub fn frame_dimensions(width: u32, height: u32, frame: &Frame) -> (u32, u32) {
     (scaled(frame.width), scaled(frame.height))
 }
 
-/// Dimensions de sortie d'une image de `width` × `height` pixels (orientation EXIF déjà appliquée).
+/// Output dimensions of a `width` × `height` image (EXIF orientation already applied).
 pub fn target_dimensions(width: u32, height: u32, resize: &Resize) -> (u32, u32) {
     let value = f64::from(resize.value);
     let scale = match resize.mode {
@@ -276,8 +275,8 @@ pub fn target_dimensions(width: u32, height: u32, resize: &Resize) -> (u32, u32)
     (scaled(width), scaled(height))
 }
 
-/// Nombre de conversions menées de front. Seul l'encodeur AVIF utilise déjà tous les
-/// cœurs ; les autres n'en occupent qu'un, mais chaque image décodée pèse lourd en mémoire.
+/// Number of conversions run at the same time. Only the AVIF encoder already uses every core;
+/// the others use one, but each decoded image takes a lot of memory.
 pub fn parallel_conversions(format: FormatChoice) -> usize {
     if format == FormatChoice::Fixed(OutputFormat::Avif) {
         1
@@ -290,13 +289,13 @@ pub fn parallel_conversions(format: FormatChoice) -> usize {
 
 #[derive(Debug, Clone)]
 pub struct ConvertOptions {
-    /// Sans dossier de sortie, le fichier est écrit à côté de l'original.
+    /// Without an output folder, the file is written next to the original.
     pub output_dir: Option<PathBuf>,
-    /// De 1 à 100 ; ignorée en PNG, qui est sans perte.
+    /// From 1 to 100; ignored for PNG, which is lossless.
     pub quality: u8,
     pub format: FormatChoice,
     pub resize: Option<Resize>,
-    /// Taille exacte, avec recadrage ; remplace `resize`.
+    /// Exact size, with cropping; replaces `resize`.
     pub frame: Option<Frame>,
 }
 
@@ -305,7 +304,7 @@ pub struct ConversionResult {
     pub output_path: PathBuf,
     pub original_size: u64,
     pub new_size: u64,
-    /// Gain en pourcentage ; négatif si le fichier converti est plus lourd.
+    /// Saving as a percentage; negative if the converted file is larger.
     pub compression_ratio: f64,
     pub original_dimensions: (u32, u32),
     pub new_dimensions: (u32, u32),
@@ -349,14 +348,14 @@ pub fn assert_image_file(path: &Path) -> Result<Metadata, ConversionError> {
     Ok(metadata)
 }
 
-/// Décode l'image et applique l'orientation EXIF aux pixels : les métadonnées ne sont pas
-/// copiées, les photos prises en portrait ressortiraient couchées.
+/// Decodes the image and applies the EXIF orientation to the pixels: metadata is not copied,
+/// so portrait photos would otherwise come out sideways.
 fn load_oriented(path: &Path) -> Result<RgbaImage, ConversionError> {
     let mut decoder = ImageReader::open(path)?
         .with_guessed_format()?
         .into_decoder()?;
     let orientation = decoder.orientation()?;
-    // Un profil illisible ne doit pas empêcher la conversion
+    // An unreadable profile must not prevent the conversion
     let icc_profile = decoder.icc_profile().ok().flatten();
     let mut image = DynamicImage::from_decoder(decoder)?;
     image.apply_orientation(orientation);
@@ -368,9 +367,9 @@ fn load_oriented(path: &Path) -> Result<RgbaImage, ConversionError> {
     Ok(image)
 }
 
-/// Le profil de couleur n'est pas copié dans le fichier de sortie : les pixels d'une photo
-/// Display P3 ou Adobe RGB sont ramenés en sRGB, sinon ses couleurs ressortiraient ternes.
-/// Les profils non RVB (niveaux de gris, CMJN) ou invalides sont ignorés.
+/// The color profile is not copied to the output file: the pixels of a Display P3 or Adobe
+/// RGB photo are converted to sRGB, otherwise its colors would come out dull. Non-RGB
+/// (grayscale, CMYK) or invalid profiles are ignored.
 fn convert_to_srgb(image: &mut RgbaImage, icc_profile: &[u8]) {
     let Ok(source) = ColorProfile::new_from_slice(icc_profile) else {
         return;
@@ -405,7 +404,7 @@ fn resize_with(
     )
     .map_err(|error| resize_error(&error))?;
     let mut target = Image::new(width, height, PixelType::U8x4);
-    // L'alpha est prémultiplié pendant le calcul : pas de frange sombre autour des zones transparentes
+    // Alpha is premultiplied during the computation: no dark fringe around transparent areas
     Resizer::new()
         .resize(&source, &mut target, options)
         .map_err(|error| resize_error(&error))?;
@@ -418,8 +417,8 @@ fn lanczos() -> ResizeOptions {
     ResizeOptions::new().resize_alg(ResizeAlg::Convolution(FilterType::Lanczos3))
 }
 
-/// Dimensions de sortie, refusées avant toute allocation si le format ou la mémoire ne
-/// peuvent pas les accueillir.
+/// Output dimensions, refused before any allocation if the format or the memory cannot hold
+/// them.
 fn planned_dimensions(
     original: (u32, u32),
     options: &ConvertOptions,
@@ -441,8 +440,8 @@ fn planned_dimensions(
     Ok((width, height))
 }
 
-/// Redimensionne aux dimensions prévues ; avec `crop`, les bords qui dépassent des
-/// proportions de la cible sont coupés au centre au lieu de déformer l'image.
+/// Resizes to the planned dimensions; with `crop`, the edges beyond the target proportions are
+/// cut around the center instead of distorting the image.
 fn resize_to(
     image: RgbaImage,
     (width, height): (u32, u32),
@@ -459,13 +458,13 @@ fn resize_to(
     }
 }
 
-/// Miniature carrée, recadrée au centre.
+/// Square thumbnail, cropped to the center.
 fn create_thumbnail(image: &RgbaImage) -> Result<RgbaImage, ConversionError> {
     let options = lanczos().fit_into_destination(Some((0.5, 0.5)));
     resize_with(image, THUMBNAIL_SIZE, THUMBNAIL_SIZE, &options)
 }
 
-/// Dimensions (orientation EXIF appliquée), poids et miniature d'une image à ajouter à la liste.
+/// Dimensions (EXIF orientation applied), size and thumbnail of an image added to the list.
 pub fn image_info(path: &Path) -> Result<ImageInfo, ConversionError> {
     let metadata = assert_image_file(path)?;
     let image = load_oriented(path)?;
@@ -477,7 +476,7 @@ pub fn image_info(path: &Path) -> Result<ImageInfo, ConversionError> {
     })
 }
 
-// Le JPEG n'a pas de transparence : fond blanc plutôt que noir
+// JPEG has no transparency: white background rather than black
 fn flatten_on_white(image: &RgbaImage) -> RgbImage {
     RgbImage::from_fn(image.width(), image.height(), |x, y| {
         let [r, g, b, a] = image.get_pixel(x, y).0;
@@ -519,7 +518,7 @@ fn encode(
             Ok(encoder.encode(f32::from(quality)).to_vec())
         }
         OutputFormat::Jpg => {
-            // Sous-échantillonnage 4:2:0 et tables de Huffman optimisées : fichiers environ un tiers plus légers
+            // 4:2:0 subsampling and optimized Huffman tables: files about a third smaller
             let mut bytes = Vec::new();
             let mut encoder = jpeg_encoder::Encoder::new(&mut bytes, quality);
             encoder.set_sampling_factor(jpeg_encoder::SamplingFactor::F_2_2);
@@ -535,8 +534,8 @@ fn encode(
             Ok(bytes)
         }
         OutputFormat::Png => {
-            // PNG sans perte : la qualité ne s'applique pas. Le niveau maximal (Best) est
-            // deux fois plus lent pour un gain de taille de 1 à 2 %
+            // Lossless PNG: quality does not apply. The highest level (Best) is twice as slow for
+            // files only 1 to 2% smaller
             let mut bytes = Cursor::new(Vec::new());
             let encoder = PngEncoder::new_with_quality(
                 &mut bytes,
@@ -588,8 +587,8 @@ fn encode_still(
     })
 }
 
-/// Convertit un GIF en WebP animé, une image à la fois pour borner la mémoire. Un GIF d'une
-/// seule image donne un WebP fixe.
+/// Converts a GIF to an animated WebP, one frame at a time to bound memory. A single-frame
+/// GIF gives a still WebP.
 fn encode_animated_webp(
     mut decoder: GifDecoder<BufReader<File>>,
     options: &ConvertOptions,
@@ -607,14 +606,14 @@ fn encode_animated_webp(
         AnimatedWebpEncoder::new(width, height, f32::from(options.quality), loop_count)
             .map_err(encode_error)?;
 
-    // Instant d'affichage de chaque image, en millisecondes depuis le début
+    // Display time of each frame, in milliseconds since the start
     let mut timestamp: i32 = 0;
     let mut frame_count = 0;
     for frame in decoder.into_frames() {
         let frame = frame?;
         let (numerator, denominator) = frame.delay().numer_denom_ms();
         let delay = numerator / denominator.max(1);
-        // Comme les navigateurs : un délai nul ou quasi nul vaut un dixième de seconde
+        // Like browsers: a zero or near-zero delay means a tenth of a second
         let delay = if delay <= MIN_FRAME_DELAY_MS {
             DEFAULT_FRAME_DELAY_MS
         } else {
@@ -643,9 +642,8 @@ fn encode_animated_webp(
     })
 }
 
-/// Ne jamais écraser un fichier existant (ni l'original) : photo.webp, puis photo-1.webp,
-/// photo-2.webp… La création est atomique : deux conversions simultanées ne peuvent pas
-/// choisir le même nom.
+/// Never overwrites an existing file (nor the original): photo.webp, then photo-1.webp,
+/// photo-2.webp… Creation is atomic: two simultaneous conversions cannot pick the same name.
 pub fn write_new_file(
     dir: &Path,
     name: &str,
@@ -667,7 +665,7 @@ pub fn write_new_file(
             Ok(mut file) => {
                 if let Err(error) = file.write_all(bytes) {
                     drop(file);
-                    // Ne pas laisser un fichier tronqué derrière soi
+                    // Do not leave a truncated file behind
                     let _ = fs::remove_file(&candidate);
                     return Err(error.into());
                 }
@@ -677,10 +675,10 @@ pub fn write_new_file(
             Err(error) => return Err(error.into()),
         }
     }
-    unreachable!("la boucle ne se termine que par un retour")
+    unreachable!("the loop only ends with a return")
 }
 
-/// Convertit une image, en la redimensionnant si les options le demandent.
+/// Converts an image, resizing it if the options ask for it.
 pub fn convert_image(
     path: &Path,
     options: &ConvertOptions,
@@ -697,8 +695,8 @@ pub fn convert_image(
     let original_size = assert_image_file(path)?.len();
     let format = options.format.resolve(path);
 
-    // Seul le WebP conserve l'animation d'un GIF ; les autres formats gardent la première image.
-    // Le GIF est reconnu à son contenu, comme pour la miniature, pas à son extension
+    // Only WebP keeps the animation of a GIF; the other formats keep the first frame. The GIF is
+    // recognized by its content, as for the thumbnail, not by its extension
     let reader = ImageReader::open(path)?.with_guessed_format()?;
     let encoded = if format == OutputFormat::Webp && reader.format() == Some(ImageFormat::Gif) {
         encode_animated_webp(GifDecoder::new(reader.into_inner())?, options)?

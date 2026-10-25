@@ -1,6 +1,6 @@
-// Temps et tailles de sortie de chaque format, pour comparer des réglages d'encodeur.
-// cargo run --release --example compare -- <dossier de sortie> <images…>
-// La variable d'environnement QUALITY règle la qualité (80 par défaut).
+// Time and output size of each format, to compare encoder settings.
+// cargo run --release --example compare -- <output folder> <images…>
+// The QUALITY environment variable sets the quality (80 by default).
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -9,18 +9,18 @@ use lotpix::format::{format_dimensions, format_file_size};
 
 fn main() {
     let mut args = std::env::args().skip(1);
-    let output_dir = PathBuf::from(args.next().expect("dossier de sortie manquant"));
+    let output_dir = PathBuf::from(args.next().expect("missing output folder"));
     let quality = std::env::var("QUALITY").map_or(80, |value| value.parse().expect("QUALITY"));
 
     for input in args {
-        // Les chemins relatifs sont refusés par la conversion
-        let input = std::path::absolute(&input).expect("chemin");
+        // Relative paths are refused by the conversion
+        let input = std::path::absolute(&input).expect("path");
         let input = input.as_path();
 
         let start = Instant::now();
-        let info = image_info(input).expect("lecture");
+        let info = image_info(input).expect("read");
         println!(
-            "{} : {}, {} (lecture et miniature en {:?})",
+            "{}: {}, {} (read and thumbnail in {:?})",
             input.display(),
             format_dimensions((info.width, info.height)),
             format_file_size(info.size),
@@ -38,7 +38,7 @@ fn main() {
             let start = Instant::now();
             let result = convert_image(input, &options).expect("conversion");
             println!(
-                "  {} : {} octets en {:?}",
+                "  {}: {} bytes in {:?}",
                 format.extension(),
                 result.new_size,
                 start.elapsed()

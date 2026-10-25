@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ main ]
 
-# Un nouveau push annule la CI encore en cours sur la même branche ou PR
+# A new push cancels the CI still running on the same branch or PR
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Ubuntu 22.04 : les binaires restent compatibles avec les glibc plus anciennes
+        # Ubuntu 22.04: the binaries stay compatible with older glibc versions
         os: [windows-latest, ubuntu-22.04]
     defaults:
       run:
@@ -32,8 +32,8 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-    # rust-cache met dans sa clé toutes les toolchains installées : sans ce nettoyage, le Rust
-    # préinstallé sur l'image du runner (qui varie d'une machine à l'autre) invalide le cache
+    # rust-cache puts every installed toolchain in its key: without this cleanup, the Rust
+    # preinstalled on the runner image (which varies from one machine to another) invalidates the cache
     - name: Keep only the pinned toolchain
       run: |
         rustc -V
@@ -45,9 +45,9 @@ jobs:
     - name: Cache Rust build
       uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       with:
-        # Partagé avec release.yml (même valeur que l'ancienne clé, basée sur le nom du job)
+        # Shared with release.yml (same value as the former key, based on the job name)
         shared-key: build
-        # Les PRs relisent le cache de main sans en écrire un : la limite de 10 Go du dépôt n'est plus saturée
+        # PRs read the main cache without writing one: the 10 GB repository limit is no longer saturated
         save-if: ${{ github.ref == 'refs/heads/main' }}
 
     - name: Check formatting
@@ -63,7 +63,7 @@ jobs:
       run: cargo install cargo-packager --locked --version "$CARGO_PACKAGER_VERSION"
 
     - name: Build installers
-      # On vérifie que le packaging fonctionne aussi, pas seulement la compilation
+      # Checks that packaging works too, not only compilation
       run: |
         if [ "$RUNNER_OS" = "Windows" ]; then
           cargo packager --release --formats nsis

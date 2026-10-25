@@ -1,6 +1,6 @@
-// Langue de l'application : celle du système par défaut, ou celle choisie dans les
-// préférences. Les textes sont dans i18n/<langue>/lotpix.ftl (Fluent) et s'obtiennent avec
-// la macro `t!`, vérifiée à la compilation contre l'anglais
+// Application language: the system one by default, or the one chosen in the preferences.
+// Texts live in i18n/<language>/lotpix.ftl (Fluent) and are obtained with the `t!` macro,
+// checked at compile time against English
 use std::sync::LazyLock;
 
 use i18n_embed::LanguageLoader;
@@ -25,7 +25,7 @@ pub enum Language {
 impl Language {
     pub const ALL: [Language; 4] = [Self::En, Self::Fr, Self::Es, Self::De];
 
-    /// Code ISO 639-1, aussi nom du dossier de traductions.
+    /// ISO 639-1 code, also the name of the translations folder.
     pub fn code(self) -> &'static str {
         match self {
             Self::En => "en",
@@ -35,7 +35,7 @@ impl Language {
         }
     }
 
-    /// Nom de la langue dans cette langue, pour la liste de choix.
+    /// Name of the language in that language, for the list of choices.
     pub fn native_name(self) -> &'static str {
         match self {
             Self::En => "English",
@@ -45,7 +45,7 @@ impl Language {
         }
     }
 
-    /// Langue d'un code de locale (« fr-CA », « de_DE.UTF-8 »…), si elle est traduite.
+    /// Language of a locale code ("fr-CA", "de_DE.UTF-8"…), if it is translated.
     pub fn from_locale(locale: &str) -> Option<Self> {
         let primary = locale
             .split(['-', '_', '.', '@'])
@@ -57,7 +57,7 @@ impl Language {
     }
 }
 
-/// Réglage des préférences : suivre le système ou imposer une langue.
+/// Preferences setting: follow the system or force a language.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LanguageChoice {
@@ -75,28 +75,28 @@ impl LanguageChoice {
     }
 }
 
-/// Première langue traduite parmi les langues préférées de l'utilisateur, sinon l'anglais.
+/// First translated language among the user's preferred languages, otherwise English.
 pub fn system_language() -> Language {
     sys_locale::get_locales()
         .find_map(|locale| Language::from_locale(&locale))
         .unwrap_or(Language::En)
 }
 
-/// Un chargeur par langue, préparé une fois : changer de langue ne recharge rien. Un texte
-/// manquant dans une langue s'affiche en anglais.
+/// One loader per language, prepared once: changing the language reloads nothing. A text
+/// missing in a language is shown in English.
 static LOADERS: LazyLock<Vec<FluentLanguageLoader>> = LazyLock::new(|| {
     Language::ALL
         .into_iter()
         .map(|language| {
             let loader = fluent_language_loader!();
             let identifier: LanguageIdentifier =
-                language.code().parse().expect("code de langue valide");
+                language.code().parse().expect("valid language code");
             let fallback = loader.fallback_language().clone();
             loader
                 .load_languages(&Localizations, &[identifier, fallback])
-                .expect("traductions intégrées au binaire");
-            // Sans les caractères d'isolation bidirectionnelle autour des valeurs insérées :
-            // inutiles pour ces langues, et affichés comme des carrés par certaines polices
+                .expect("translations embedded in the binary");
+            // Without the bidirectional isolation characters around inserted values: useless for these
+            // languages, and shown as boxes by some fonts
             loader.set_use_isolating(false);
             loader
         })
@@ -107,11 +107,11 @@ pub fn loader() -> &'static FluentLanguageLoader {
     let index = Language::ALL
         .iter()
         .position(|language| *language == current())
-        .expect("langue connue");
+        .expect("known language");
     &LOADERS[index]
 }
 
-/// Texte traduit dans la langue courante : `t!("cle")` ou `t!("cle", nombre = 3)`.
+/// Text translated into the current language: `t!("key")` or `t!("key", count = 3)`.
 #[macro_export]
 macro_rules! t {
     ($message_id:literal) => {{
@@ -122,9 +122,9 @@ macro_rules! t {
     }};
 }
 
-// La langue est globale à l'application. Dans les tests, chacun dans son propre thread, elle
-// est propre au thread : un test qui change de langue ne perturbe pas les autres, et tous
-// partent du français
+// The language is global to the application. In tests, each running in its own thread, it
+// belongs to the thread: a test that changes the language does not disturb the others, and
+// they all start in French
 #[cfg(not(test))]
 mod state {
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -141,7 +141,7 @@ mod state {
         let index = Language::ALL
             .iter()
             .position(|other| *other == language)
-            .expect("langue connue");
+            .expect("known language");
         CURRENT.store(index, Ordering::Relaxed);
     }
 }
@@ -209,8 +209,8 @@ mod tests {
         }
     }
 
-    /// Identifiants des messages d'un fichier Fluent, sans les commentaires, les attributs ni
-    /// les lignes de continuation.
+    /// Message identifiers of a Fluent file, without comments, attributes or continuation
+    /// lines.
     fn message_ids(source: &str) -> BTreeSet<String> {
         source
             .lines()
@@ -219,12 +219,12 @@ mod tests {
             .collect()
     }
 
-    /// Chaque langue traduit exactement les textes de l'anglais : ni oubli, ni clé obsolète.
+    /// Each language translates exactly the English texts: nothing missing, no obsolete key.
     #[test]
     fn every_language_has_every_message() {
         let source = |language: Language| {
             let file = Localizations::get(&format!("{}/lotpix.ftl", language.code()))
-                .expect("fichier de traductions");
+                .expect("translations file");
             String::from_utf8(file.data.into_owned()).unwrap()
         };
         let reference = message_ids(&source(Language::En));
@@ -233,7 +233,7 @@ mod tests {
             assert_eq!(
                 message_ids(&source(language)),
                 reference,
-                "traductions {} incomplètes ou en trop",
+                "{} translations missing or extra",
                 language.code()
             );
         }

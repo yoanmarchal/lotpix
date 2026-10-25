@@ -1,4 +1,4 @@
-// Éléments communs aux deux écrans : en-tête, barre de statut, infobulles, états vides
+// Elements shared by both screens: header, status bar, tooltips, empty states
 use iced::widget::{
     Text, button, checkbox, column, container, pick_list, progress_bar, row, space, text, tooltip,
 };
@@ -28,7 +28,7 @@ pub fn with_tooltip<'a>(
     .into()
 }
 
-/// Écran ou liste sans contenu : une grande icône estompée et une phrase.
+/// Screen or list without content: a large faded icon and a sentence.
 pub fn empty_state<'a>(
     icon: Text<'a>,
     label: impl text::IntoFragment<'a>,
@@ -46,7 +46,7 @@ pub fn empty_state<'a>(
     .into()
 }
 
-/// Ligne de séparation horizontale.
+/// Horizontal separator line.
 pub fn separator<'a>(tokens: Tokens) -> Element<'a, Message> {
     container(space().width(Fill).height(1))
         .style(move |_| theme::separator(tokens))
@@ -110,7 +110,7 @@ pub fn header(app: &App) -> Element<'_, Message> {
     .into()
 }
 
-/// Langue de l'interface : celle du système ou une langue imposée.
+/// Interface language: the system one or a forced language.
 fn language_picker(app: &App) -> Element<'_, Message> {
     let tokens = app.tokens;
     with_tooltip(
@@ -193,8 +193,8 @@ pub fn status_bar(app: &App) -> Element<'_, Message> {
     .spacing(theme::SPACE_SM)
     .align_y(Center);
 
-    // Un message trop long pour la langue courante est coupé, plutôt que de repousser le reste
-    // de la barre hors de la fenêtre
+    // A message too long for the current language is cut, rather than pushing the rest of the
+    // bar out of the window
     bar = match &app.notice {
         Some(notice) => bar.push(
             container(

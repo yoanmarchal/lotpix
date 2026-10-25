@@ -1,4 +1,4 @@
-// Historique des conversions, enregistré en JSON dans le dossier de données de l'application
+// Conversion history, saved as JSON in the application data folder
 use std::io;
 use std::path::PathBuf;
 
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::conversion::ConversionResult;
 use crate::storage;
 
-// Seules les conversions les plus récentes sont gardées
+// Only the most recent conversions are kept
 pub const MAX_HISTORY: usize = 100;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -50,21 +50,21 @@ pub struct History {
 }
 
 impl History {
-    /// Un fichier absent ou illisible donne un historique vide : il ne doit jamais empêcher
-    /// l'application de démarrer.
+    /// A missing or unreadable file gives an empty history: it must never prevent the
+    /// application from starting.
     pub fn load(path: PathBuf) -> Self {
         let items = storage::load(&path);
         Self { path, items }
     }
 
-    /// Conversions de la plus récente à la plus ancienne.
+    /// Conversions from the most recent to the oldest.
     pub fn items(&self) -> &[HistoryItem] {
         &self.items
     }
 
     pub fn add(&mut self, item: HistoryItem) -> io::Result<()> {
-        // Une autre fenêtre de l'application a pu enregistrer des conversions entre-temps :
-        // on repart du fichier pour ne pas effacer ses entrées
+        // Another window of the application may have saved conversions in the meantime: start
+        // again from the file so as not to erase its entries
         if let Some(items) = storage::read(&self.path) {
             self.items = items;
         }
@@ -117,7 +117,7 @@ mod tests {
     fn starts_empty_with_an_unreadable_file() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("history.json");
-        fs::write(&path, "{ pas du json").unwrap();
+        fs::write(&path, "{ not json").unwrap();
 
         assert!(History::load(path).items().is_empty());
     }

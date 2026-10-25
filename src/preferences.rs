@@ -1,4 +1,4 @@
-// Préférences conservées d'un lancement à l'autre
+// Preferences kept from one launch to the next
 use std::io;
 use std::path::Path;
 
@@ -11,9 +11,9 @@ use crate::storage;
 #[serde(default, rename_all = "camelCase")]
 pub struct Preferences {
     pub dark_mode: bool,
-    /// Interroger GitHub au démarrage pour signaler une nouvelle version.
+    /// Query GitHub at startup to announce a new version.
     pub check_updates: bool,
-    /// Langue de l'interface : celle du système par défaut.
+    /// Interface language: the system one by default.
     pub language: LanguageChoice,
 }
 
@@ -64,7 +64,7 @@ mod tests {
         let path = dir.path().join("preferences.json");
         assert!(Preferences::default().check_updates);
 
-        // Fichier écrit par une version qui ne connaissait pas encore ce réglage
+        // File written by a version that did not know this setting yet
         std::fs::write(&path, r#"{"darkMode":true}"#).unwrap();
 
         let loaded = Preferences::load(&path);

@@ -1,20 +1,20 @@
-// Mise en forme des nombres et des dates de l'interface, selon la langue courante
+// Formatting of the numbers and dates of the interface, in the current language
 use chrono::{Datelike, NaiveDateTime, Timelike};
 
 use crate::i18n::{self, Language};
 
-/// Conventions d'écriture des nombres d'une langue.
+/// Number writing conventions of a language.
 struct NumberStyle {
     decimal: char,
     group: char,
-    /// Nombre de chiffres à partir duquel les milliers sont séparés : l'espagnol écrit
-    /// « 2048 » mais « 20.480 ».
+    /// Number of digits from which thousands are separated: Spanish writes "2048" but
+    /// "20.480".
     min_grouping_digits: usize,
 }
 
 fn number_style(language: Language) -> NumberStyle {
     match language {
-        // Espace fine insécable entre les milliers
+        // Narrow no-break space between thousands
         Language::Fr => NumberStyle {
             decimal: ',',
             group: '\u{202f}',
@@ -38,7 +38,7 @@ fn number_style(language: Language) -> NumberStyle {
     }
 }
 
-/// Nombre à deux décimales au plus, avec les séparateurs de la langue courante.
+/// Number with at most two decimals, with the separators of the current language.
 fn format_number(value: f64) -> String {
     let style = number_style(i18n::current());
     let rounded = format!("{:.2}", value.abs());
@@ -46,7 +46,7 @@ fn format_number(value: f64) -> String {
     let decimals = decimals.trim_end_matches('0');
 
     let mut result = String::new();
-    // « -0,00 » n'a pas de sens : le signe ne s'affiche que si l'arrondi n'est pas nul
+    // "-0.00" makes no sense: the sign only shows if the rounded value is not zero
     if value < 0.0 && rounded.chars().any(|c| c.is_ascii_digit() && c != '0') {
         result.push('-');
     }
@@ -64,11 +64,11 @@ fn format_number(value: f64) -> String {
     result
 }
 
-/// Taille de fichier lisible, par exemple « 1,5 Ko » ou « 1.5 KB ».
+/// Readable file size, for example "1,5 Ko" or "1.5 KB".
 pub fn format_file_size(bytes: u64) -> String {
     let language = i18n::current();
     if bytes < 1024 {
-        // Le français met 0 et 1 au singulier, les autres langues seulement 1
+        // French puts 0 and 1 in the singular, the other languages only 1
         let singular = bytes == 1 || (bytes == 0 && language == Language::Fr);
         let unit = match (language, singular) {
             (Language::Fr, true) => "octet",
@@ -92,7 +92,7 @@ pub fn format_file_size(bytes: u64) -> String {
     format!("{} {}", format_number(value), units[unit])
 }
 
-/// Gain de compression, par exemple « 91,38 % » ou « 91.38% ».
+/// Compression saving, for example "91,38 %" or "91.38%".
 pub fn format_percent(ratio: f64) -> String {
     match i18n::current() {
         Language::En => format!("{}%", format_number(ratio)),
@@ -100,12 +100,12 @@ pub fn format_percent(ratio: f64) -> String {
     }
 }
 
-/// Dimensions en pixels, par exemple « 4000 × 3000 ».
+/// Dimensions in pixels, for example "4000 × 3000".
 pub fn format_dimensions((width, height): (u32, u32)) -> String {
     format!("{width} × {height}")
 }
 
-/// Date et heure courtes, par exemple « 11 oct. 2026, 18:29 ».
+/// Short date and time, for example "11 oct. 2026, 18:29".
 pub fn format_date(date: NaiveDateTime) -> String {
     let language = i18n::current();
     let months: [&str; 12] = match language {
@@ -191,7 +191,7 @@ mod tests {
 
         i18n::set_language(Language::En);
         assert_eq!(format_file_size(2 * 1024u64.pow(4)), "2,048 GB");
-        // L'espagnol ne sépare pas les milliers d'un nombre à quatre chiffres
+        // Spanish does not separate the thousands of a four-digit number
         i18n::set_language(Language::Es);
         assert_eq!(format_file_size(2 * 1024u64.pow(4)), "2048 GB");
         assert_eq!(format_file_size(20 * 1024u64.pow(4)), "20.480 GB");

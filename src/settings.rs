@@ -1,5 +1,5 @@
-// Réglages de conversion, conservés d'un lancement à l'autre : le menu contextuel compresse
-// avec les derniers réglages choisis dans l'interface
+// Conversion settings, kept from one launch to the next: saved from the interface, and used
+// by `lotpix compress` without options
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -16,11 +16,11 @@ pub const DEFAULT_RESIZE_PERCENT: &str = "50";
 pub struct Settings {
     pub format: FormatChoice,
     pub quality: u8,
-    /// Sans dossier de sortie, les fichiers sont écrits à côté des originaux.
+    /// Without an output folder, the files are written next to the originals.
     pub output_dir: Option<PathBuf>,
     pub resize_enabled: bool,
     pub resize_mode: ResizeMode,
-    /// Saisie brute du champ : validée par `resize`.
+    /// Raw input of the field: validated by `resize`.
     pub resize_value: String,
     pub allow_upscale: bool,
 }
@@ -52,14 +52,14 @@ impl Settings {
         self.format == FormatChoice::Fixed(OutputFormat::Png)
     }
 
-    /// Redimensionnement demandé, ou le message à afficher si la saisie est invalide.
+    /// Requested resizing, or the message to display if the input is invalid.
     pub fn resize(&self) -> Result<Option<Resize>, String> {
         if !self.resize_enabled {
             return Ok(None);
         }
         let resize = Resize {
             mode: self.resize_mode,
-            // Une saisie vide ou trop longue pour un entier donne 0, refusé par la validation
+            // An empty input, or one too long for an integer, gives 0, refused by the validation
             value: self.resize_value.parse().unwrap_or(0),
             allow_upscale: self.allow_upscale,
         };
