@@ -90,6 +90,8 @@ Les deux commandes de packaging demandent `cargo install cargo-packager --locked
 
 Modifiez `version` dans `Cargo.toml` et fusionnez sur `main` : le workflow crée le tag `vX.Y.Z`, la release GitHub et y dépose les installeurs Windows et Linux.
 
+Sous Windows, le workflow attend deux validations dans SignPath (l'application, puis l'installeur), pendant une heure au plus chacune. Il faut pour cela le secret `SIGNPATH_API_TOKEN` et les variables `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_PROJECT_SLUG` et `SIGNPATH_SIGNING_POLICY_SLUG` dans les réglages du dépôt ; sans le secret, l'installeur est publié sans signature. Les configurations d'artefacts à créer dans SignPath sont dans [`.signpath/artifact-configurations/`](.signpath/artifact-configurations/), sous les noms `executable` et `installer`.
+
 ## Configuration système requise
 
 ### Windows
@@ -99,6 +101,20 @@ Modifiez `version` dans `Cargo.toml` et fusionnez sur `main` : le workflow crée
 ### Linux
 - Ubuntu 22.04 ou plus récent, ou distribution équivalente
 - Architecture x64 ou arm64
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+Les exécutables Windows (`lotpix.exe` et l'installeur) sont compilés et signés par le workflow GitHub Actions [`release.yml`](.github/workflows/release.yml), à partir du code de ce dépôt. Chaque signature est validée à la main avant d'être appliquée.
+
+Équipe :
+- Auteurs et relecteurs : [Yoan Marchal](https://github.com/yoanmarchal)
+- Approbateurs des signatures : [Yoan Marchal](https://github.com/yoanmarchal)
+
+### Confidentialité
+
+Lotpix traite les images sur l'ordinateur : aucune image, aucun nom de fichier ni aucune donnée d'utilisation n'est envoyé. Le seul accès réseau est la vérification des nouvelles versions au démarrage, qui interroge l'API des releases GitHub ; elle se désactive par la case « Vérifier les mises à jour » en bas de la fenêtre. Cette requête est soumise à la [politique de confidentialité de GitHub](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
 
 ## License
 

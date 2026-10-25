@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configuration d'artefact SignPath « executable » : signe lotpix.exe avant qu'il soit
+  empaqueté dans l'installeur (.github/workflows/release.yml). L'artefact GitHub est une
+  archive zip contenant le seul lotpix.exe.
+
+  Les restrictions de métadonnées (nom et version du produit) sont exigées par SignPath
+  Foundation : elles viennent de build.rs (ProductName) et de Cargo.toml (version).
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="lotpix.exe" product-name="Lotpix" product-version="${version}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

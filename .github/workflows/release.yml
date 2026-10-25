@@ -59,9 +59,9 @@ jobs:
           fi
 
           LAST_TAG=$(git describe --tags --abbrev=0 --match 'v*.*.*' 2>/dev/null || true)
-          # La CI, Renovate et la doc ne changent rien pour l'utilisateur
+          # La CI, la signature, Renovate et la doc ne changent rien pour l'utilisateur
           if [[ -n "$LAST_TAG" ]] && ! git diff --name-only "$LAST_TAG" HEAD \
-              | grep -qvE '^(\.github/|\.claude/|renovate\.json$|.*\.md$)'; then
+              | grep -qvE '^(\.github/|\.claude/|\.signpath/|renovate\.json$|.*\.md$)'; then
             echo "No app changes since $LAST_TAG. No new release."
             echo "should_release=false" >> $GITHUB_OUTPUT
             exit 0
@@ -118,6 +118,10 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      # Signature Windows par SignPath Foundation (voir le README, « Politique de signature »).
+      # Sans le secret, par exemple dans un fork, la release est publiée sans signature
+      SIGN: ${{ matrix.os == 'windows-latest' && secrets.SIGNPATH_API_TOKEN != '' }}
 
     steps:
       - name: Check out Git repository
@@ -125,6 +129,12 @@ jobs:
         with:
           # Le tag inclut le commit de version créé par check-tag
           ref: ${{ needs.check-tag.outputs.tag }}
+
+      - name: Read version
+        id: version
+        env:
+          TAG: ${{ needs.check-tag.outputs.tag }}
+        run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
       # rust-cache met dans sa clé toutes les toolchains installées : sans ce nettoyage, le Rust
       # préinstallé sur l'image du runner (qui varie d'une machine à l'autre) invalide le cache
@@ -147,8 +157,83 @@ jobs:
       - name: Install cargo-packager
         run: cargo install cargo-packager --locked --version "$CARGO_PACKAGER_VERSION"
 
+      # Sous Windows, lotpix.exe est signé avant d'entrer dans l'installeur, puis l'installeur
+      # lui-même. Chaque signature attend la validation manuelle de la release dans SignPath
+      - name: Build application
+        if: env.SIGN == 'true'
+        run: cargo build --release
+
+      - name: Upload application for signing
+        id: unsigned-app
+        if: env.SIGN == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lotpix-exe-unsigned
+          path: target/release/lotpix.exe
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign application
+        if: env.SIGN == 'true'
+        uses: SignPath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: executable
+          github-artifact-id: ${{ steps.unsigned-app.outputs.artifact-id }}
+          parameters: |
+            version: "${{ steps.version.outputs.version }}"
+          # Le temps de valider la release dans SignPath
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed-app
+
+      - name: Use the signed application
+        if: env.SIGN == 'true'
+        run: cp signed-app/lotpix.exe target/release/lotpix.exe
+
       - name: Build installers
         run: cargo packager --release --formats "${{ matrix.formats }}"
+
+      # cargo-packager recompile avant d'empaqueter : l'exécutable recompilé ne serait plus signé
+      - name: Check the packaged application is signed
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: |
+          $signature = Get-AuthenticodeSignature target/release/lotpix.exe
+          if ($signature.Status -ne 'Valid') {
+            throw "lotpix.exe n'est plus signé : $($signature.Status)"
+          }
+
+      - name: Upload installer for signing
+        id: unsigned-installer
+        if: env.SIGN == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lotpix-installer-unsigned
+          path: release/lotpix_${{ steps.version.outputs.version }}_x64-setup.exe
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign installer
+        if: env.SIGN == 'true'
+        uses: SignPath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
+          parameters: |
+            version: "${{ steps.version.outputs.version }}"
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed-installer
+
+      - name: Use the signed installer
+        if: env.SIGN == 'true'
+        run: cp signed-installer/*.exe release/
 
       - name: Upload installers to the release
         env:

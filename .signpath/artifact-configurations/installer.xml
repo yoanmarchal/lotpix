@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configuration d'artefact SignPath « installer » : signe l'installeur NSIS produit par
+  cargo-packager (.github/workflows/release.yml). L'artefact GitHub est une archive zip
+  contenant le seul installeur.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="lotpix_${version}_x64-setup.exe" product-name="Lotpix" product-version="${version}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>
