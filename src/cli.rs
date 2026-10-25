@@ -12,6 +12,8 @@ use crate::batch::{self, Job};
 use crate::conversion::{ConversionError, ConversionResult, FormatChoice, OutputFormat};
 use crate::format::{format_file_size, format_percent};
 use crate::history::{History, HistoryItem};
+use crate::i18n;
+use crate::preferences::Preferences;
 use crate::presets::{self, Preset, SIZES};
 use crate::queue;
 use crate::settings::Settings;
@@ -144,6 +146,9 @@ fn absolute_paths(arguments: impl Iterator<Item = OsString>) -> Vec<PathBuf> {
 }
 
 pub fn run(command: Command) -> ExitCode {
+    // L'interface, les notifications et l'aide suivent la langue choisie dans les préférences
+    let preferences = Preferences::load(&storage::data_dir().join("preferences.json"));
+    i18n::set_language(preferences.language.resolve());
     match command {
         Command::Help => {
             println!("{}", usage());

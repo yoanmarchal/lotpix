@@ -4,6 +4,7 @@ pub mod cli;
 pub mod conversion;
 pub mod format;
 pub mod history;
+pub mod i18n;
 pub mod preferences;
 pub mod presets;
 mod queue;
