@@ -1,0 +1,8 @@
+[Nemo Action]
+Name=Redimensionner avec Lotpix…
+Comment=Redimensionne à une taille standard ou au format d'un réseau social
+Icon-Name=lotpix
+Exec=sh /usr/share/nemo/actions/lotpix-menu.sh resize %F
+Selection=notnone
+Mimetypes=image/jpeg;image/png;image/gif;image/tiff;image/webp;inode/directory;
+Dependencies=zenity;

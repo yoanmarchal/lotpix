@@ -1,0 +1,59 @@
+[Desktop Entry]
+Type=Service
+MimeType=image/jpeg;image/png;image/gif;image/tiff;image/webp;inode/directory;
+Actions=4k;full-hd;hd;web;thumbnail;half;instagram-square;instagram-portrait;story;facebook;x;youtube;pinterest;
+X-KDE-Submenu=Redimensionner avec Lotpix
+X-KDE-Priority=TopLevel
+Icon=lotpix
+
+[Desktop Action 4k]
+Name=4K (3840 px)
+Exec=lotpix resize --size 4k %F
+
+[Desktop Action full-hd]
+Name=Full HD (1920 px)
+Exec=lotpix resize --size full-hd %F
+
+[Desktop Action hd]
+Name=HD (1280 px)
+Exec=lotpix resize --size hd %F
+
+[Desktop Action web]
+Name=Web (1024 px)
+Exec=lotpix resize --size web %F
+
+[Desktop Action thumbnail]
+Name=Miniature (640 px)
+Exec=lotpix resize --size thumbnail %F
+
+[Desktop Action half]
+Name=50 %
+Exec=lotpix resize --size half %F
+
+[Desktop Action instagram-square]
+Name=Instagram carré (1080 × 1080)
+Exec=lotpix resize --size instagram-square %F
+
+[Desktop Action instagram-portrait]
+Name=Instagram portrait (1080 × 1350)
+Exec=lotpix resize --size instagram-portrait %F
+
+[Desktop Action story]
+Name=Story, Reels, TikTok (1080 × 1920)
+Exec=lotpix resize --size story %F
+
+[Desktop Action facebook]
+Name=Facebook, LinkedIn (1200 × 630)
+Exec=lotpix resize --size facebook %F
+
+[Desktop Action x]
+Name=X (1600 × 900)
+Exec=lotpix resize --size x %F
+
+[Desktop Action youtube]
+Name=Miniature YouTube (1280 × 720)
+Exec=lotpix resize --size youtube %F
+
+[Desktop Action pinterest]
+Name=Pinterest (1000 × 1500)
+Exec=lotpix resize --size pinterest %F

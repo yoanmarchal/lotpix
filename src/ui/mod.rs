@@ -15,21 +15,17 @@ use iced::widget::{column, container, image};
 use iced::{Element, Event, Length, Size, Subscription, Task, Theme, event, window};
 use tokio::sync::Semaphore;
 
+use crate::batch::{self, Job};
 use crate::conversion::{
-    self, ConversionResult, ConvertOptions, FormatChoice, INPUT_EXTENSIONS, OutputFormat, Resize,
-    ResizeMode, THUMBNAIL_SIZE,
+    self, ConversionResult, FormatChoice, INPUT_EXTENSIONS, OutputFormat, ResizeMode,
+    THUMBNAIL_SIZE,
 };
 use crate::history::{History, HistoryItem};
 use crate::preferences::Preferences;
+use crate::settings::{DEFAULT_RESIZE_PERCENT, DEFAULT_RESIZE_PIXELS, Settings};
 use crate::storage;
 use crate::update::{self, Version};
 use theme::Tokens;
-
-const DEFAULT_RESIZE_PIXELS: &str = "1920";
-const DEFAULT_RESIZE_PERCENT: &str = "50";
-
-// Une photo de 50 mégapixels décodée occupe 200 Mo, et autant pendant son redimensionnement
-const MAX_PARALLEL_CONVERSIONS: usize = 4;
 
 // Chaque image décodée occupe plusieurs dizaines de Mo : on borne le nombre de lectures
 // simultanées quand l'utilisateur dépose un dossier entier
@@ -37,8 +33,9 @@ static LOAD_LIMIT: LazyLock<Semaphore> = LazyLock::new(|| {
     Semaphore::new(std::thread::available_parallelism().map_or(2, |count| count.get()))
 });
 
-pub fn run() -> iced::Result {
-    iced::application(App::new, App::update, App::view)
+/// Ouvre la fenêtre, avec ces images et dossiers déjà ajoutés.
+pub fn run(paths: Vec<PathBuf>) -> iced::Result {
+    iced::application(move || App::new(paths.clone()), App::update, App::view)
         .title("Lotpix")
         .subscription(App::subscription)
         .theme(App::theme)
@@ -73,6 +70,8 @@ pub struct ImageEntry {
     id: ImageId,
     name: String,
     path: PathBuf,
+    /// Sous-dossier recréé dans le dossier de sortie (image trouvée dans un dossier ajouté).
+    subdir: PathBuf,
     size: u64,
     dimensions: (u32, u32),
     thumbnail: image::Handle,
@@ -88,63 +87,6 @@ enum Status {
 }
 
 #[derive(Debug, Clone)]
-struct Settings {
-    format: FormatChoice,
-    quality: u8,
-    /// Sans dossier de sortie, les fichiers sont écrits à côté des originaux.
-    output_dir: Option<PathBuf>,
-    resize_enabled: bool,
-    resize_mode: ResizeMode,
-    /// Saisie brute du champ : validée par `resize`.
-    resize_value: String,
-    allow_upscale: bool,
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            format: FormatChoice::Fixed(OutputFormat::Webp),
-            quality: 80,
-            output_dir: None,
-            resize_enabled: false,
-            resize_mode: ResizeMode::LongestSide,
-            resize_value: DEFAULT_RESIZE_PIXELS.to_owned(),
-            allow_upscale: false,
-        }
-    }
-}
-
-impl Settings {
-    fn is_lossless(&self) -> bool {
-        self.format == FormatChoice::Fixed(OutputFormat::Png)
-    }
-
-    /// Redimensionnement demandé, ou le message à afficher si la saisie est invalide.
-    fn resize(&self) -> Result<Option<Resize>, String> {
-        if !self.resize_enabled {
-            return Ok(None);
-        }
-        let resize = Resize {
-            mode: self.resize_mode,
-            // Une saisie vide ou trop longue pour un entier donne 0, refusé par la validation
-            value: self.resize_value.parse().unwrap_or(0),
-            allow_upscale: self.allow_upscale,
-        };
-        resize.validate().map_err(|error| error.to_string())?;
-        Ok(Some(resize))
-    }
-
-    fn options(&self) -> Option<ConvertOptions> {
-        Some(ConvertOptions {
-            output_dir: self.output_dir.clone(),
-            quality: self.quality,
-            format: self.format,
-            resize: self.resize().ok()?,
-        })
-    }
-}
-
-#[derive(Debug, Clone)]
 pub enum Message {
     TabSelected(Tab),
     DarkModeToggled,
@@ -153,6 +95,8 @@ pub enum Message {
     FileDropped(PathBuf),
     SelectFiles,
     FilesSelected(Vec<PathBuf>),
+    /// Images trouvées dans les dossiers ajoutés.
+    FoldersScanned(u64, Vec<Job>),
     ImageLoaded(u64, Option<ImageEntry>),
     RemoveImage(ImageId),
     RemoveAllImages,
@@ -181,6 +125,7 @@ pub struct App {
     images: Vec<ImageEntry>,
     next_id: ImageId,
     settings: Settings,
+    settings_path: PathBuf,
     is_converting: bool,
     /// Images traitées et images à traiter du lot en cours.
     batch: (usize, usize),
@@ -209,14 +154,10 @@ pub struct App {
 }
 
 impl App {
-    fn new() -> (Self, Task<Message>) {
+    /// `paths` : fichiers passés en arguments (« Ouvrir avec », menu contextuel, dépôt sur
+    /// l'icône de l'application).
+    fn new(paths: Vec<PathBuf>) -> (Self, Task<Message>) {
         let mut app = Self::with_data_dir(&storage::data_dir());
-        // Fichiers passés en arguments : « Ouvrir avec » ou dépôt sur l'icône de l'application
-        // Un chemin relatif (lancement depuis un terminal) est résolu depuis le dossier courant
-        let paths = std::env::args_os()
-            .skip(1)
-            .filter_map(|argument| std::path::absolute(argument).ok())
-            .collect();
         let load = app.load_images(paths);
         let check = app.check_for_update();
         (app, Task::batch([load, check]))
@@ -248,11 +189,13 @@ impl App {
     fn with_data_dir(data_dir: &Path) -> Self {
         let preferences_path = data_dir.join("preferences.json");
         let preferences = Preferences::load(&preferences_path);
+        let settings_path = data_dir.join("settings.json");
         Self {
             tab: Tab::Convert,
             images: Vec::new(),
             next_id: 0,
-            settings: Settings::default(),
+            settings: Settings::load(&settings_path),
+            settings_path,
             is_converting: false,
             batch: (0, 0),
             active_conversions: 0,
@@ -337,6 +280,12 @@ impl App {
                 // Le sélecteur a pu rester ouvert pendant qu'une conversion démarrait
                 if !self.is_converting {
                     return self.load_images(paths);
+                }
+            }
+            Message::FoldersScanned(generation, jobs) => {
+                self.loading = self.loading.saturating_sub(1);
+                if generation == self.load_generation {
+                    return self.load_jobs(jobs);
                 }
             }
             Message::ImageLoaded(generation, loaded) => {
@@ -453,17 +402,43 @@ impl App {
         Task::none()
     }
 
+    /// Ajoute des images ; un dossier apporte les images de toute son arborescence.
     fn load_images(&mut self, paths: Vec<PathBuf>) -> Task<Message> {
         if self.loading == 0 {
             self.ignored = 0;
             self.notice = None;
         }
+        let (folders, files): (Vec<_>, Vec<_>) = paths.into_iter().partition(|path| path.is_dir());
+        let load = self.load_jobs(files.into_iter().map(Job::file).collect());
+        if folders.is_empty() {
+            return load;
+        }
+        // Le parcours d'une grande arborescence ne doit pas figer la fenêtre
+        self.loading += 1;
         let generation = self.load_generation;
-        Task::batch(paths.into_iter().map(|path| {
+        let scan = Task::perform(
+            async move {
+                tokio::task::spawn_blocking(move || {
+                    folders
+                        .iter()
+                        .flat_map(|folder| batch::find_images(folder))
+                        .collect()
+                })
+                .await
+                .unwrap_or_default()
+            },
+            move |jobs| Message::FoldersScanned(generation, jobs),
+        );
+        Task::batch([load, scan])
+    }
+
+    fn load_jobs(&mut self, jobs: Vec<Job>) -> Task<Message> {
+        let generation = self.load_generation;
+        Task::batch(jobs.into_iter().map(|job| {
             let id = self.next_id;
             self.next_id += 1;
             self.loading += 1;
-            Task::perform(load_image(id, path), move |loaded| {
+            Task::perform(load_image(id, job), move |loaded| {
                 Message::ImageLoaded(generation, loaded)
             })
         }))
@@ -475,22 +450,13 @@ impl App {
             return;
         }
         change(&mut self.settings);
+        if self.settings.save(&self.settings_path).is_err() {
+            self.notice = Some("Impossible d'enregistrer les réglages".to_owned());
+        }
         for image in &mut self.images {
             if matches!(image.status, Status::Converted(_) | Status::Failed(_)) {
                 image.status = Status::Pending;
             }
-        }
-    }
-
-    /// Nombre de conversions menées de front. Seul l'encodeur AVIF utilise déjà tous les
-    /// cœurs ; les autres n'en occupent qu'un, mais chaque image décodée pèse lourd en mémoire.
-    fn conversion_slots(&self) -> usize {
-        if self.settings.format == FormatChoice::Fixed(OutputFormat::Avif) {
-            1
-        } else {
-            std::thread::available_parallelism()
-                .map_or(1, |count| count.get())
-                .min(MAX_PARALLEL_CONVERSIONS)
         }
     }
 
@@ -501,7 +467,7 @@ impl App {
             self.is_converting = false;
             return Task::none();
         };
-        let slots = self.conversion_slots();
+        let slots = conversion::parallel_conversions(self.settings.format);
 
         let mut tasks = Vec::new();
         for image in &mut self.images {
@@ -515,14 +481,16 @@ impl App {
             self.active_conversions += 1;
 
             let id = image.id;
-            let path = image.path.clone();
-            let original_path = path.clone();
+            let job = Job {
+                source: image.path.clone(),
+                subdir: image.subdir.clone(),
+            };
+            let original_path = image.path.clone();
             let options = options.clone();
             tasks.push(Task::perform(
                 async move {
                     tokio::task::spawn_blocking(move || {
-                        conversion::convert_image(&path, &options)
-                            .map_err(|error| error.to_string())
+                        batch::convert(&job, &options).map_err(|error| error.to_string())
                     })
                     .await
                     .unwrap_or_else(|_| Err("Erreur inattendue pendant la conversion".to_owned()))
@@ -583,9 +551,13 @@ impl App {
     }
 }
 
-async fn load_image(id: ImageId, path: PathBuf) -> Option<ImageEntry> {
+async fn load_image(id: ImageId, job: Job) -> Option<ImageEntry> {
     let _permit = LOAD_LIMIT.acquire().await.ok()?;
     tokio::task::spawn_blocking(move || {
+        let Job {
+            source: path,
+            subdir,
+        } = job;
         let info = conversion::image_info(&path).ok()?;
         Some(ImageEntry {
             id,
@@ -599,6 +571,7 @@ async fn load_image(id: ImageId, path: PathBuf) -> Option<ImageEntry> {
             ),
             status: Status::Pending,
             path,
+            subdir,
         })
     })
     .await
@@ -680,6 +653,7 @@ impl fmt::Display for ResizeMode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::conversion::Resize;
 
     fn app() -> (App, tempfile::TempDir) {
         let dir = tempfile::tempdir().unwrap();
@@ -691,6 +665,7 @@ mod tests {
             id,
             name: format!("photo-{id}.png"),
             path: PathBuf::from(format!("/images/photo-{id}.png")),
+            subdir: PathBuf::new(),
             size: 1000,
             dimensions: (4000, 3000),
             thumbnail: image::Handle::from_rgba(1, 1, vec![0; 4]),
@@ -891,8 +866,8 @@ mod tests {
 
         let _ = app.update(Message::Convert);
 
-        let slots = app.conversion_slots();
-        assert!((1..=MAX_PARALLEL_CONVERSIONS).contains(&slots));
+        let slots = conversion::parallel_conversions(app.settings.format);
+        assert!(slots >= 1);
         assert_eq!(app.active_conversions, slots);
         assert_eq!(app.batch, (0, 6));
         assert_eq!(app.pending_count(), 6 - slots);
@@ -991,6 +966,18 @@ mod tests {
         // Une réponse arrivée après coup ne rouvre pas le bandeau
         let _ = app.update(Message::UpdateChecked(Version::parse("2.1.0")));
         assert_eq!(app.available_update, None);
+    }
+
+    #[test]
+    fn settings_are_persisted_for_the_context_menu() {
+        let (mut app, dir) = app();
+
+        let _ = app.update(Message::QualityChanged(55));
+        let _ = app.update(Message::ResizeToggled(true));
+
+        let reloaded = App::with_data_dir(dir.path()).settings;
+        assert_eq!(reloaded.quality, 55);
+        assert!(reloaded.resize_enabled);
     }
 
     #[test]

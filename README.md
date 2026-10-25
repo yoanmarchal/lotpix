@@ -31,6 +31,14 @@
   - Miniatures, suivi de chaque conversion, gain de poids
   - Mode sombre/clair
 
+- 🖱️ **Menu contextuel** (Explorateur Windows, Dolphin, Nemo)
+  - Sur des images ou des dossiers (sous-dossiers compris), sans ouvrir de fenêtre, avec la qualité recommandée pour chaque format (WebP 80, JPEG 82, AVIF 65, PNG sans perte). Les fichiers sont écrits à côté des originaux, et une notification résume le gain
+  - « Compresser avec Lotpix » : WebP, JPEG, PNG, AVIF ou format d'origine
+  - « Redimensionner avec Lotpix » : tailles standard (4K, Full HD, HD, Web, Miniature, 50 %), en gardant le format d'origine, ou formats des réseaux sociaux (Instagram carré et portrait, Story/Reels/TikTok, Facebook/LinkedIn, X, miniature YouTube, Pinterest), redimensionnés puis recadrés au centre à la taille exacte et écrits en JPEG. Une image plus petite que le cadre est recadrée sans être agrandie
+  - « Ouvrir dans Lotpix » pour choisir d'autres réglages avant de convertir
+  - Sous Windows 11, les entrées sont dans « Afficher plus d'options » (ou Maj + clic droit) ; Nemo n'ayant pas de sous-menus, ses entrées « Compresser… » et « Redimensionner… » font choisir le format ou la taille dans une liste (elles demandent zenity, installé par défaut sur Cinnamon)
+  - En ligne de commande : `lotpix compress --format <format>`, `lotpix resize --size <taille>`, ou `lotpix compress` seul pour les réglages de l'interface (`lotpix --help` liste les tailles)
+
 - 📊 **Historique des conversions**
   - Les 100 dernières conversions, avec poids et dimensions avant et après
   - Accès rapide aux fichiers convertis

@@ -108,6 +108,7 @@ fn options(format: OutputFormat) -> ConvertOptions {
         quality: 80,
         format: FormatChoice::Fixed(format),
         resize: None,
+        frame: None,
     }
 }
 

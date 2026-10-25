@@ -13,6 +13,7 @@ use image::{
     ImageFormat, ImageReader, Limits, RgbImage, RgbaImage,
 };
 use moxcms::{ColorProfile, Layout, TransformOptions};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::animated_webp::AnimatedWebpEncoder;
@@ -29,6 +30,9 @@ pub const MAX_RESIZE_PERCENT: u32 = 400;
 // Un agrandissement au-delà de 512 Mio de pixels RGBA est refusé plutôt que tenté : c'est aussi
 // la limite appliquée au décodage
 const MAX_OUTPUT_PIXELS: u64 = 512 * 1024 * 1024 / 4;
+
+// Une photo de 50 mégapixels décodée occupe 200 Mo, et autant pendant son redimensionnement
+const MAX_PARALLEL_CONVERSIONS: usize = 4;
 
 const MIN_FRAME_DELAY_MS: u32 = 10;
 const DEFAULT_FRAME_DELAY_MS: u32 = 100;
@@ -72,7 +76,8 @@ pub enum ConversionError {
     Io(#[from] io::Error),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum OutputFormat {
     Webp,
     Jpg,
@@ -111,7 +116,8 @@ impl OutputFormat {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum FormatChoice {
     /// Garde le format du fichier source (utile pour seulement redimensionner).
     Original,
@@ -132,7 +138,8 @@ impl FormatChoice {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ResizeMode {
     Width,
     Height,
@@ -164,6 +171,41 @@ impl Resize {
     }
 }
 
+/// Taille exacte imposée, par exemple 1080 × 1350 pour Instagram : l'image est redimensionnée
+/// pour couvrir le cadre, puis recadrée au centre.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Frame {
+    pub width: u32,
+    pub height: u32,
+}
+
+impl Frame {
+    pub fn validate(&self) -> Result<(), ConversionError> {
+        let fits = |side: u32| (1..=MAX_RESIZE_PIXELS).contains(&side);
+        if fits(self.width) && fits(self.height) {
+            Ok(())
+        } else {
+            Err(ConversionError::InvalidResize {
+                max: MAX_RESIZE_PIXELS,
+                unit: "px",
+            })
+        }
+    }
+}
+
+/// Dimensions de sortie d'une image de `width` × `height` pixels recadrée sur `frame`. Une
+/// image trop petite pour le cadre n'est pas agrandie : elle est seulement recadrée aux mêmes
+/// proportions que lui.
+pub fn frame_dimensions(width: u32, height: u32, frame: &Frame) -> (u32, u32) {
+    let scale = (f64::from(frame.width) / f64::from(width))
+        .max(f64::from(frame.height) / f64::from(height));
+    if scale <= 1.0 {
+        return (frame.width, frame.height);
+    }
+    let scaled = |side: u32| ((f64::from(side) / scale).round() as u32).max(1);
+    (scaled(frame.width), scaled(frame.height))
+}
+
 /// Dimensions de sortie d'une image de `width` × `height` pixels (orientation EXIF déjà appliquée).
 pub fn target_dimensions(width: u32, height: u32, resize: &Resize) -> (u32, u32) {
     let value = f64::from(resize.value);
@@ -182,6 +224,18 @@ pub fn target_dimensions(width: u32, height: u32, resize: &Resize) -> (u32, u32)
     (scaled(width), scaled(height))
 }
 
+/// Nombre de conversions menées de front. Seul l'encodeur AVIF utilise déjà tous les
+/// cœurs ; les autres n'en occupent qu'un, mais chaque image décodée pèse lourd en mémoire.
+pub fn parallel_conversions(format: FormatChoice) -> usize {
+    if format == FormatChoice::Fixed(OutputFormat::Avif) {
+        1
+    } else {
+        std::thread::available_parallelism()
+            .map_or(1, |count| count.get())
+            .min(MAX_PARALLEL_CONVERSIONS)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ConvertOptions {
     /// Sans dossier de sortie, le fichier est écrit à côté de l'original.
@@ -190,6 +244,8 @@ pub struct ConvertOptions {
     pub quality: u8,
     pub format: FormatChoice,
     pub resize: Option<Resize>,
+    /// Taille exacte, avec recadrage ; remplace `resize`.
+    pub frame: Option<Frame>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -314,12 +370,14 @@ fn lanczos() -> ResizeOptions {
 /// peuvent pas les accueillir.
 fn planned_dimensions(
     original: (u32, u32),
-    resize: Option<&Resize>,
+    options: &ConvertOptions,
     format: OutputFormat,
 ) -> Result<(u32, u32), ConversionError> {
-    let (width, height) = resize.map_or(original, |resize| {
-        target_dimensions(original.0, original.1, resize)
-    });
+    let (width, height) = match (&options.frame, &options.resize) {
+        (Some(frame), _) => frame_dimensions(original.0, original.1, frame),
+        (None, Some(resize)) => target_dimensions(original.0, original.1, resize),
+        (None, None) => original,
+    };
     assert_fits(width, height, format)?;
     if (width, height) != original && u64::from(width) * u64::from(height) > MAX_OUTPUT_PIXELS {
         return Err(ConversionError::TooManyPixels {
@@ -331,11 +389,22 @@ fn planned_dimensions(
     Ok((width, height))
 }
 
-fn resize_to(image: RgbaImage, (width, height): (u32, u32)) -> Result<RgbaImage, ConversionError> {
+/// Redimensionne aux dimensions prévues ; avec `crop`, les bords qui dépassent des
+/// proportions de la cible sont coupés au centre au lieu de déformer l'image.
+fn resize_to(
+    image: RgbaImage,
+    (width, height): (u32, u32),
+    crop: bool,
+) -> Result<RgbaImage, ConversionError> {
     if (width, height) == image.dimensions() {
         return Ok(image);
     }
-    resize_with(&image, width, height, &lanczos())
+    if crop {
+        let options = lanczos().fit_into_destination(Some((0.5, 0.5)));
+        resize_with(&image, width, height, &options)
+    } else {
+        resize_with(&image, width, height, &lanczos())
+    }
 }
 
 /// Miniature carrée, recadrée au centre.
@@ -458,8 +527,8 @@ fn encode_still(
     options: &ConvertOptions,
 ) -> Result<Encoded, ConversionError> {
     let original_dimensions = image.dimensions();
-    let target = planned_dimensions(original_dimensions, options.resize.as_ref(), format)?;
-    let image = resize_to(image, target)?;
+    let target = planned_dimensions(original_dimensions, options, format)?;
+    let image = resize_to(image, target, options.frame.is_some())?;
     Ok(Encoded {
         bytes: encode(&image, format, options.quality)?,
         original_dimensions,
@@ -477,11 +546,7 @@ fn encode_animated_webp(
     decoder.set_limits(Limits::default())?;
 
     let original_dimensions = decoder.dimensions();
-    let (width, height) = planned_dimensions(
-        original_dimensions,
-        options.resize.as_ref(),
-        OutputFormat::Webp,
-    )?;
+    let (width, height) = planned_dimensions(original_dimensions, options, OutputFormat::Webp)?;
     let loop_count = match decoder.loop_count() {
         LoopCount::Infinite => 0,
         LoopCount::Finite(count) => i32::try_from(count.get()).unwrap_or(i32::MAX),
@@ -504,7 +569,11 @@ fn encode_animated_webp(
             delay
         };
 
-        let frame = resize_to(frame.into_buffer(), (width, height))?;
+        let frame = resize_to(
+            frame.into_buffer(),
+            (width, height),
+            options.frame.is_some(),
+        )?;
         encoder
             .add_frame(frame.as_raw(), timestamp)
             .map_err(encode_error)?;
@@ -569,6 +638,9 @@ pub fn convert_image(
     }
     if let Some(resize) = &options.resize {
         resize.validate()?;
+    }
+    if let Some(frame) = &options.frame {
+        frame.validate()?;
     }
     let original_size = assert_image_file(path)?.len();
     let format = options.format.resolve(path);

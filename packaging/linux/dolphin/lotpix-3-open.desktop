@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Service
+MimeType=image/jpeg;image/png;image/gif;image/tiff;image/webp;inode/directory;
+Actions=open;
+X-KDE-Priority=TopLevel
+
+[Desktop Action open]
+Name=Ouvrir dans Lotpix
+Icon=lotpix
+Exec=lotpix open %F

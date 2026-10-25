@@ -1,0 +1,8 @@
+[Nemo Action]
+Name=Compresser avec Lotpix…
+Comment=Compresse avec la qualité recommandée, dans le format choisi
+Icon-Name=lotpix
+Exec=sh /usr/share/nemo/actions/lotpix-menu.sh compress %F
+Selection=notnone
+Mimetypes=image/jpeg;image/png;image/gif;image/tiff;image/webp;inode/directory;
+Dependencies=zenity;
