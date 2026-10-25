@@ -73,6 +73,7 @@ impl Settings {
             quality: self.quality,
             format: self.format,
             resize: self.resize().ok()?,
+            frame: None,
         })
     }
 }

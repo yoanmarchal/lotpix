@@ -1,0 +1,27 @@
+[Desktop Entry]
+Type=Service
+MimeType=image/jpeg;image/png;image/gif;image/tiff;image/webp;inode/directory;
+Actions=webp;jpg;png;avif;original;
+X-KDE-Submenu=Compresser avec Lotpix
+X-KDE-Priority=TopLevel
+Icon=lotpix
+
+[Desktop Action webp]
+Name=WebP
+Exec=lotpix compress --format webp %F
+
+[Desktop Action jpg]
+Name=JPEG
+Exec=lotpix compress --format jpg %F
+
+[Desktop Action png]
+Name=PNG (sans perte)
+Exec=lotpix compress --format png %F
+
+[Desktop Action avif]
+Name=AVIF
+Exec=lotpix compress --format avif %F
+
+[Desktop Action original]
+Name=Format d'origine
+Exec=lotpix compress --format original %F

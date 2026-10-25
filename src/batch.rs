@@ -7,7 +7,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::conversion::{
-    self, ConversionError, ConversionResult, ConvertOptions, INPUT_EXTENSIONS,
+    self, ConversionError, ConversionResult, ConvertOptions, FormatChoice, INPUT_EXTENSIONS,
 };
 
 /// Image à convertir.
@@ -110,9 +110,19 @@ pub fn convert_all(
     jobs: &[Job],
     options: &ConvertOptions,
 ) -> Vec<Result<ConversionResult, ConversionError>> {
+    convert_all_with(jobs, options.format, |_| options.clone())
+}
+
+/// Comme `convert_all`, avec des options propres à chaque image. `format` règle le nombre de
+/// conversions menées de front.
+pub fn convert_all_with(
+    jobs: &[Job],
+    format: FormatChoice,
+    options_for: impl Fn(&Job) -> ConvertOptions + Sync,
+) -> Vec<Result<ConversionResult, ConversionError>> {
     let next = AtomicUsize::new(0);
     let results = Mutex::new((0..jobs.len()).map(|_| None).collect::<Vec<_>>());
-    let workers = conversion::parallel_conversions(options.format).min(jobs.len());
+    let workers = conversion::parallel_conversions(format).min(jobs.len());
     std::thread::scope(|scope| {
         for _ in 0..workers {
             scope.spawn(|| {
@@ -121,7 +131,7 @@ pub fn convert_all(
                     let Some(job) = jobs.get(index) else {
                         break;
                     };
-                    let result = convert(job, options);
+                    let result = convert(job, &options_for(job));
                     results.lock().unwrap()[index] = Some(result);
                 }
             });

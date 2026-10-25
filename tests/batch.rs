@@ -27,6 +27,7 @@ fn webp(output_dir: Option<PathBuf>) -> ConvertOptions {
         quality: 80,
         format: FormatChoice::Fixed(OutputFormat::Webp),
         resize: None,
+        frame: None,
     }
 }
 

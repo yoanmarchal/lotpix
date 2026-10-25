@@ -65,26 +65,63 @@ icons = [
 [package.metadata.packager.nsis]
 installer-icon = "assets/icons/icon.ico"
 languages = ["French", "English"]
-# Menu contextuel de l'Explorateur, sur les images, les dossiers et le fond d'un dossier.
+# Menu contextuel de l'Explorateur, sur les images, les dossiers et le fond d'un dossier :
+# « Compresser avec Lotpix » et « Redimensionner avec Lotpix » ouvrent un sous-menu, avec
+# les réglages recommandés (src/presets.rs) ; « Ouvrir dans Lotpix » ouvre l'interface.
 # Les entrées classiques apparaissent sous « Afficher plus d'options » dans Windows 11.
 # MultiSelectModel = Player lève la limite de 15 fichiers sélectionnés ; Windows lance alors
 # un processus par fichier, que l'application regroupe (src/queue.rs)
 preinstall-section = '''
-!macro LotpixVerb KEY VERB LABEL MODE ARGUMENT
-  WriteRegStr SHCTX "Software\Classes\${KEY}\shell\${VERB}" "MUIVerb" "${LABEL}"
-  WriteRegStr SHCTX "Software\Classes\${KEY}\shell\${VERB}" "Icon" "$\"$INSTDIR\${MAINBINARYNAME}.exe$\",0"
-  WriteRegStr SHCTX "Software\Classes\${KEY}\shell\${VERB}" "MultiSelectModel" "Player"
-  WriteRegStr SHCTX "Software\Classes\${KEY}\shell\${VERB}\command" "" "$\"$INSTDIR\${MAINBINARYNAME}.exe$\" ${MODE} $\"${ARGUMENT}$\""
+!macro LotpixCommand KEY LABEL ARGUMENTS ARGUMENT
+  WriteRegStr SHCTX "${KEY}" "MUIVerb" "${LABEL}"
+  WriteRegStr SHCTX "${KEY}" "MultiSelectModel" "Player"
+  WriteRegStr SHCTX "${KEY}\command" "" "$\"$INSTDIR\${MAINBINARYNAME}.exe$\" ${ARGUMENTS} $\"${ARGUMENT}$\""
 !macroend
 
-!macro LotpixMenu KEY ARGUMENT
-  !insertmacro LotpixVerb "${KEY}" "Lotpix.Compress" "Compresser avec Lotpix" "compress" "${ARGUMENT}"
-  !insertmacro LotpixVerb "${KEY}" "Lotpix.Open" "Ouvrir dans Lotpix" "open" "${ARGUMENT}"
+!macro LotpixSubmenu KEY LABEL
+  WriteRegStr SHCTX "${KEY}" "MUIVerb" "${LABEL}"
+  WriteRegStr SHCTX "${KEY}" "Icon" "$\"$INSTDIR\${MAINBINARYNAME}.exe$\",0"
+  WriteRegStr SHCTX "${KEY}" "MultiSelectModel" "Player"
+  WriteRegStr SHCTX "${KEY}" "SubCommands" ""
 !macroend
 
-!macro LotpixMenuRemove KEY _ARGUMENT
-  DeleteRegKey SHCTX "Software\Classes\${KEY}\shell\Lotpix.Compress"
-  DeleteRegKey SHCTX "Software\Classes\${KEY}\shell\Lotpix.Open"
+!macro LotpixMenuRemove CLASS _ARGUMENT
+  DeleteRegKey SHCTX "Software\Classes\${CLASS}\shell\Lotpix.Compress"
+  DeleteRegKey SHCTX "Software\Classes\${CLASS}\shell\Lotpix.Resize"
+  DeleteRegKey SHCTX "Software\Classes\${CLASS}\shell\Lotpix.Open"
+!macroend
+
+!macro LotpixMenu CLASS ARGUMENT
+  ; Repart de zéro : une version précédente a pu laisser d'autres entrées
+  !insertmacro LotpixMenuRemove "${CLASS}" "${ARGUMENT}"
+
+  ; Les entrées d'un sous-menu sont triées par nom de clé
+  !insertmacro LotpixSubmenu "Software\Classes\${CLASS}\shell\Lotpix.Compress" "Compresser avec Lotpix"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\1-webp" "WebP" "compress --format webp" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\2-jpg" "JPEG" "compress --format jpg" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\3-png" "PNG (sans perte)" "compress --format png" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\4-avif" "AVIF" "compress --format avif" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Compress\shell\5-original" "Format d'origine" "compress --format original" "${ARGUMENT}"
+
+  !insertmacro LotpixSubmenu "Software\Classes\${CLASS}\shell\Lotpix.Resize" "Redimensionner avec Lotpix"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\01-4k" "4K (3840 px)" "resize --size 4k" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\02-full-hd" "Full HD (1920 px)" "resize --size full-hd" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\03-hd" "HD (1280 px)" "resize --size hd" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\04-web" "Web (1024 px)" "resize --size web" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\05-thumbnail" "Miniature (640 px)" "resize --size thumbnail" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\06-half" "50 %" "resize --size half" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\07-instagram-square" "Instagram carré (1080 × 1080)" "resize --size instagram-square" "${ARGUMENT}"
+  ; Séparateur avant les réseaux sociaux (ECF_SEPARATORBEFORE)
+  WriteRegDWORD SHCTX "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\07-instagram-square" "CommandFlags" 0x20
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\08-instagram-portrait" "Instagram portrait (1080 × 1350)" "resize --size instagram-portrait" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\09-story" "Story, Reels, TikTok (1080 × 1920)" "resize --size story" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\10-facebook" "Facebook, LinkedIn (1200 × 630)" "resize --size facebook" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\11-x" "X (1600 × 900)" "resize --size x" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\12-youtube" "Miniature YouTube (1280 × 720)" "resize --size youtube" "${ARGUMENT}"
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Resize\shell\13-pinterest" "Pinterest (1000 × 1500)" "resize --size pinterest" "${ARGUMENT}"
+
+  !insertmacro LotpixCommand "Software\Classes\${CLASS}\shell\Lotpix.Open" "Ouvrir dans Lotpix" "open" "${ARGUMENT}"
+  WriteRegStr SHCTX "Software\Classes\${CLASS}\shell\Lotpix.Open" "Icon" "$\"$INSTDIR\${MAINBINARYNAME}.exe$\",0"
 !macroend
 
 !macro LotpixMenus MACRO
@@ -110,4 +147,4 @@ SectionEnd
 
 # Menus contextuels de Dolphin (KDE) et de Nemo (Cinnamon)
 [package.metadata.packager.deb]
-files = { "packaging/linux/lotpix-dolphin.desktop" = "/usr/share/kio/servicemenus/lotpix.desktop", "packaging/linux/lotpix-compress.nemo_action" = "/usr/share/nemo/actions/lotpix-compress.nemo_action", "packaging/linux/lotpix-open.nemo_action" = "/usr/share/nemo/actions/lotpix-open.nemo_action" }
+files = { "packaging/linux/dolphin" = "/usr/share/kio/servicemenus", "packaging/linux/nemo" = "/usr/share/nemo/actions" }

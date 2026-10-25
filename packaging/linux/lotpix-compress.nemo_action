@@ -1,7 +1,0 @@
-[Nemo Action]
-Name=Compresser avec Lotpix
-Comment=Compresse les images avec les derniers réglages de Lotpix
-Icon-Name=lotpix
-Exec=lotpix compress %F
-Selection=notnone
-Mimetypes=image/jpeg;image/png;image/gif;image/tiff;image/webp;inode/directory;

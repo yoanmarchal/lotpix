@@ -33,6 +33,7 @@ fn main() {
                 quality,
                 format: FormatChoice::Fixed(format),
                 resize: None,
+                frame: None,
             };
             let start = Instant::now();
             let result = convert_image(input, &options).expect("conversion");
