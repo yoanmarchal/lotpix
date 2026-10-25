@@ -14,6 +14,7 @@ use super::widgets::{empty_state, separator, with_tooltip};
 use super::{App, FORMAT_CHOICES, ImageEntry, Message, RESIZE_MODES, Status};
 use crate::conversion::{Resize, ResizeMode, target_dimensions};
 use crate::format::{format_dimensions, format_file_size, format_percent};
+use crate::t;
 
 pub fn view(app: &App) -> Element<'_, Message> {
     row![
@@ -40,11 +41,11 @@ fn drop_zone(app: &App) -> Element<'_, Message> {
     let is_enabled = !app.is_converting;
 
     let title = if app.loading > 0 {
-        "Chargement des images…"
+        t!("images-loading")
     } else if app.is_hovered {
-        "Déposez les images ici"
+        t!("drop-hovered")
     } else {
-        "Glissez-déposez vos images ici"
+        t!("drop-title")
     };
 
     let content = column![
@@ -56,14 +57,14 @@ fn drop_zone(app: &App) -> Element<'_, Message> {
             .size(theme::TEXT_LG)
             .font(theme::FONT_MEDIUM)
             .color(tokens.text_secondary),
-        text("ou cliquez pour choisir des fichiers (JPEG, PNG, GIF, TIFF, WebP)")
+        text(t!("drop-subtitle"))
             .size(theme::TEXT_SM)
             .color(tokens.text_muted),
         space().height(theme::SPACE_XS),
         button(
             row![
                 icon_image_down().size(theme::ICON_MD),
-                text("Choisir des images").font(theme::FONT_MEDIUM)
+                text(t!("drop-choose")).font(theme::FONT_MEDIUM)
             ]
             .spacing(theme::SPACE_SM)
             .align_y(Center),
@@ -94,20 +95,20 @@ fn drop_zone(app: &App) -> Element<'_, Message> {
 fn image_list(app: &App) -> Element<'_, Message> {
     let tokens = app.tokens;
     if app.images.is_empty() {
-        return empty_state(icon_file_x(), "Aucune image ajoutée", tokens);
+        return empty_state(icon_file_x(), t!("list-empty"), tokens);
     }
     // Une saisie de taille invalide n'affiche pas d'aperçu des dimensions
     let resize = app.settings.resize().ok().flatten();
 
     let title = row![
-        text(format!("Images ({})", app.images.len()))
+        text(t!("list-title", count = app.images.len()))
             .font(theme::FONT_MEDIUM)
             .color(tokens.text_secondary),
         space().width(Fill),
         button(
             row![
                 icon_trash_2().size(theme::TEXT_XS),
-                text("Tout retirer").size(theme::TEXT_SM)
+                text(t!("list-remove-all")).size(theme::TEXT_SM)
             ]
             .spacing(theme::SPACE_XS)
             .align_y(Center),
@@ -160,19 +161,19 @@ fn image_row<'a>(
         Status::Pending => None,
         Status::Converting => Some(with_tooltip(
             icon_refresh_cw().size(theme::ICON_MD).color(tokens.warning),
-            "Conversion en cours",
+            t!("image-converting"),
             tokens,
         )),
         Status::Converted(_) => Some(with_tooltip(
             icon_file_check()
                 .size(theme::ICON_MD)
                 .color(tokens.success_text),
-            "Convertie",
+            t!("image-converted"),
             tokens,
         )),
         Status::Failed(_) => Some(with_tooltip(
             icon_file_x().size(theme::ICON_MD).color(tokens.danger_text),
-            "Erreur",
+            t!("image-failed"),
             tokens,
         )),
     };
@@ -194,7 +195,7 @@ fn image_row<'a>(
             .padding(0)
             .on_press(Message::RemoveImage(image.id))
             .style(move |_, status| theme::remove_button(tokens, status)),
-        "Retirer de la liste",
+        t!("image-remove"),
         tokens,
     ))
     .spacing(theme::SPACE_SM)
@@ -218,9 +219,9 @@ fn image_row<'a>(
                     result.new_dimensions,
                 )))
                 .push(
-                    text(format!(
-                        "Gain : {}",
-                        format_percent(result.compression_ratio)
+                    text(t!(
+                        "image-gain",
+                        gain = format_percent(result.compression_ratio)
                     ))
                     .size(theme::TEXT_XS)
                     .color(if is_smaller {
@@ -289,7 +290,7 @@ pub fn dimensions_change(original: (u32, u32), new: (u32, u32)) -> String {
 
 pub fn open_button<'a>(path: &std::path::Path, size: f32, tokens: Tokens) -> Element<'a, Message> {
     button(
-        row![icon_external_link().size(size), text("Ouvrir").size(size)]
+        row![icon_external_link().size(size), text(t!("open")).size(size)]
             .spacing(theme::SPACE_XS)
             .align_y(Center),
     )
@@ -321,7 +322,7 @@ fn settings_panel(app: &App) -> Element<'_, Message> {
         icon_sliders_horizontal()
             .size(20)
             .color(tokens.primary_text),
-        text("Paramètres de conversion")
+        text(t!("settings-title"))
             .size(theme::TEXT_LG)
             .font(theme::FONT_SEMIBOLD)
             .color(tokens.text),
@@ -364,7 +365,7 @@ fn settings_panel(app: &App) -> Element<'_, Message> {
 fn format_field(app: &App) -> Element<'_, Message> {
     let tokens = app.tokens;
     column![
-        field_label("Format de sortie", tokens),
+        field_label(t!("format-label"), tokens),
         pick_list(
             &FORMAT_CHOICES[..],
             Some(app.settings.format),
@@ -386,22 +387,22 @@ fn quality_field(app: &App) -> Element<'_, Message> {
     let is_lossless = app.settings.is_lossless();
 
     let quality_hint = if is_lossless {
-        "Le PNG est sans perte : la qualité ne s'applique pas"
+        t!("quality-hint-lossless")
     } else if quality < 30 {
-        "Qualité basse, fichier plus petit"
+        t!("quality-hint-low")
     } else if quality < 70 {
-        "Qualité équilibrée"
+        t!("quality-hint-balanced")
     } else {
-        "Haute qualité, fichier plus grand"
+        t!("quality-hint-high")
     };
 
     column![
-        field_label(format!("Qualité : {quality} %"), tokens),
+        field_label(t!("quality-label", quality = quality), tokens),
         row![
-            hint("Basse", tokens),
+            hint(t!("quality-low"), tokens),
             slider(1..=100, quality, Message::QualityChanged)
                 .style(move |_, status| theme::slider_style(tokens, status, !is_lossless)),
-            hint("Haute", tokens),
+            hint(t!("quality-high"), tokens),
         ]
         .spacing(theme::SPACE_SM)
         .align_y(Center),
@@ -417,7 +418,7 @@ fn resize_field(app: &App) -> Element<'_, Message> {
 
     let toggle = row![
         icon_scaling().size(theme::ICON_MD).color(tokens.text_muted),
-        text("Redimensionner")
+        text(t!("resize-label"))
             .size(theme::TEXT_SM)
             .font(theme::FONT_MEDIUM)
             .color(tokens.text_secondary),
@@ -455,7 +456,7 @@ fn resize_field(app: &App) -> Element<'_, Message> {
         .style(move |_, status| theme::pick_list_style(tokens, status))
         .menu_style(move |_| theme::menu(tokens)),
         row![
-            text_input("Taille", &settings.resize_value)
+            text_input(&t!("resize-placeholder"), &settings.resize_value)
                 .on_input(Message::ResizeValueChanged)
                 .padding([theme::SPACE_SM, theme::SPACE_MD])
                 .size(theme::TEXT_SM)
@@ -469,10 +470,10 @@ fn resize_field(app: &App) -> Element<'_, Message> {
                 .size(theme::TEXT_XS)
                 .color(tokens.danger_text)
                 .into(),
-            None => hint("Les proportions de l'image sont conservées", tokens),
+            None => hint(t!("resize-keeps-ratio"), tokens),
         },
         checkbox(!settings.allow_upscale)
-            .label("Ne pas agrandir les images plus petites")
+            .label(t!("resize-no-upscale"))
             .on_toggle(|keep_small| Message::AllowUpscaleToggled(!keep_small))
             .size(16)
             .text_size(theme::TEXT_SM)
@@ -488,12 +489,9 @@ fn output_dir_field(app: &App) -> Element<'_, Message> {
     let output_dir = app.settings.output_dir.as_deref();
 
     let path = container(
-        text(output_dir.map_or_else(
-            || "Même dossier que l'original".to_owned(),
-            |dir| dir.display().to_string(),
-        ))
-        .size(theme::TEXT_SM)
-        .wrapping(text::Wrapping::None),
+        text(output_dir.map_or_else(|| t!("output-same-folder"), |dir| dir.display().to_string()))
+            .size(theme::TEXT_SM)
+            .wrapping(text::Wrapping::None),
     )
     .padding([theme::SPACE_SM, theme::SPACE_MD])
     .width(Fill)
@@ -531,9 +529,9 @@ fn output_dir_field(app: &App) -> Element<'_, Message> {
             icon_folder().size(theme::ICON_MD),
             Message::SelectOutputDir,
             if output_dir.is_some() {
-                "Changer le dossier de sortie"
+                t!("output-change")
             } else {
-                "Choisir un dossier de sortie"
+                t!("output-choose")
             },
         ),
     ]
@@ -543,11 +541,11 @@ fn output_dir_field(app: &App) -> Element<'_, Message> {
         field = field.push(icon_action(
             icon_undo_2().size(theme::ICON_MD),
             Message::OutputDirReset,
-            "Revenir au dossier d'origine",
+            t!("output-reset"),
         ));
     }
 
-    column![field_label("Dossier de sortie (optionnel)", tokens), field]
+    column![field_label(t!("output-label"), tokens), field]
         .spacing(theme::SPACE_XS)
         .into()
 }
@@ -560,11 +558,11 @@ fn convert_action(app: &App) -> Element<'_, Message> {
         && app.settings.options().is_some();
 
     let label = if app.is_converting {
-        row![text("Conversion en cours…").font(theme::FONT_MEDIUM)]
+        row![text(t!("convert-running")).font(theme::FONT_MEDIUM)]
     } else {
         row![
             icon_play().size(theme::ICON_MD),
-            text("Convertir les images").font(theme::FONT_MEDIUM)
+            text(t!("convert-button")).font(theme::FONT_MEDIUM)
         ]
     };
     let convert = button(container(label.spacing(theme::SPACE_SM).align_y(Center)).center_x(Fill))
@@ -582,14 +580,11 @@ fn convert_action(app: &App) -> Element<'_, Message> {
                 .style(move |_| theme::progress_bar_style(tokens)),
         );
     } else if app.loading > 0 {
-        action = action.push(hint("Chargement des images…", tokens));
+        action = action.push(hint(t!("images-loading"), tokens));
     } else if app.images.is_empty() {
-        action = action.push(hint("Veuillez ajouter des images à convertir", tokens));
+        action = action.push(hint(t!("convert-hint-empty"), tokens));
     } else if app.pending_count() == 0 {
-        action = action.push(hint(
-            "Toutes les images sont traitées : changez un réglage pour les reconvertir",
-            tokens,
-        ));
+        action = action.push(hint(t!("convert-hint-done"), tokens));
     }
     action.into()
 }

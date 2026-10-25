@@ -21,9 +21,11 @@ use crate::conversion::{
     THUMBNAIL_SIZE,
 };
 use crate::history::{History, HistoryItem};
+use crate::i18n::{self, Language, LanguageChoice};
 use crate::preferences::Preferences;
 use crate::settings::{DEFAULT_RESIZE_PERCENT, DEFAULT_RESIZE_PIXELS, Settings};
 use crate::storage;
+use crate::t;
 use crate::update::{self, Version};
 use theme::Tokens;
 
@@ -90,6 +92,7 @@ enum Status {
 pub enum Message {
     TabSelected(Tab),
     DarkModeToggled,
+    LanguageSelected(LanguageChoice),
     FileHovered,
     HoverLeft,
     FileDropped(PathBuf),
@@ -182,7 +185,7 @@ impl App {
 
     fn save_preferences(&mut self) {
         if self.preferences.save(&self.preferences_path).is_err() {
-            self.notice = Some("Impossible d'enregistrer les préférences".to_owned());
+            self.notice = Some(t!("notice-preferences-not-saved"));
         }
     }
 
@@ -238,6 +241,12 @@ impl App {
                 self.theme = theme::iced_theme(self.preferences.dark_mode);
                 self.save_preferences();
             }
+            // Toute l'interface est redessinée dans la nouvelle langue, sans redémarrer
+            Message::LanguageSelected(choice) => {
+                self.preferences.language = choice;
+                i18n::set_language(choice.resolve());
+                self.save_preferences();
+            }
 
             Message::UpdateChecked(version) => {
                 // Le réglage a pu être désactivé pendant que la requête était en cours
@@ -255,7 +264,7 @@ impl App {
             }
             Message::DownloadUpdate => {
                 if open::that_detached(update::DOWNLOAD_URL).is_err() {
-                    self.notice = Some("Impossible d'ouvrir la page de téléchargement".to_owned());
+                    self.notice = Some(t!("notice-download-page"));
                 }
             }
             Message::UpdateDismissed => self.available_update = None,
@@ -300,10 +309,7 @@ impl App {
                     }
                     None => {
                         self.ignored += 1;
-                        self.notice = Some(format!(
-                            "{} : format non pris en charge ou fichier illisible",
-                            plural(self.ignored, "fichier ignoré", "fichiers ignorés")
-                        ));
+                        self.notice = Some(t!("notice-ignored-files", count = self.ignored));
                     }
                 }
             }
@@ -377,7 +383,7 @@ impl App {
                     Ok(result) => {
                         let item = HistoryItem::new(original_path, &result, Utc::now());
                         if self.history.add(item).is_err() {
-                            self.notice = Some("Impossible d'enregistrer l'historique".to_owned());
+                            self.notice = Some(t!("notice-history-not-saved"));
                         }
                         Status::Converted(result)
                     }
@@ -395,7 +401,7 @@ impl App {
             Message::ClearHistoryConfirmed(confirmed) => {
                 self.is_confirming_clear = false;
                 if confirmed && self.history.clear().is_err() {
-                    self.notice = Some("Impossible d'enregistrer l'historique".to_owned());
+                    self.notice = Some(t!("notice-history-not-saved"));
                 }
             }
         }
@@ -451,7 +457,7 @@ impl App {
         }
         change(&mut self.settings);
         if self.settings.save(&self.settings_path).is_err() {
-            self.notice = Some("Impossible d'enregistrer les réglages".to_owned());
+            self.notice = Some(t!("notice-settings-not-saved"));
         }
         for image in &mut self.images {
             if matches!(image.status, Status::Converted(_) | Status::Failed(_)) {
@@ -493,7 +499,7 @@ impl App {
                         batch::convert(&job, &options).map_err(|error| error.to_string())
                     })
                     .await
-                    .unwrap_or_else(|_| Err("Erreur inattendue pendant la conversion".to_owned()))
+                    .unwrap_or_else(|_| Err(t!("conversion-unexpected-error")))
                 },
                 move |result| Message::Converted(id, original_path.clone(), result),
             ));
@@ -515,9 +521,9 @@ impl App {
         }
         let name = file_name(path);
         self.notice = if !path.exists() {
-            Some(format!("Le fichier n'existe plus : {name}"))
+            Some(t!("notice-file-missing", name = name.as_str()))
         } else if open::that_detached(path).is_err() {
-            Some(format!("Impossible d'ouvrir {name}"))
+            Some(t!("notice-cannot-open", name = name.as_str()))
         } else {
             None
         };
@@ -581,8 +587,8 @@ async fn load_image(id: ImageId, job: Job) -> Option<ImageEntry> {
 
 async fn pick_files() -> Vec<PathBuf> {
     rfd::AsyncFileDialog::new()
-        .set_title("Choisir des images")
-        .add_filter("Images", &INPUT_EXTENSIONS)
+        .set_title(t!("dialog-choose-images"))
+        .add_filter(t!("dialog-images-filter"), &INPUT_EXTENSIONS)
         .pick_files()
         .await
         .unwrap_or_default()
@@ -593,7 +599,7 @@ async fn pick_files() -> Vec<PathBuf> {
 
 async fn pick_folder() -> Option<PathBuf> {
     rfd::AsyncFileDialog::new()
-        .set_title("Choisir le dossier de sortie")
+        .set_title(t!("dialog-choose-output"))
         .pick_folder()
         .await
         .map(|folder| folder.path().to_owned())
@@ -601,14 +607,9 @@ async fn pick_folder() -> Option<PathBuf> {
 
 fn file_name(path: &Path) -> String {
     path.file_name().map_or_else(
-        || "inconnu".to_owned(),
+        || t!("file-unknown"),
         |name| name.to_string_lossy().into_owned(),
     )
-}
-
-/// « 1 image », « 3 images » : le nombre suivi du nom accordé.
-fn plural(count: usize, singular: &str, plural: &str) -> String {
-    format!("{count} {}", if count > 1 { plural } else { singular })
 }
 
 const FORMAT_CHOICES: [FormatChoice; 5] = [
@@ -626,26 +627,50 @@ const RESIZE_MODES: [ResizeMode; 4] = [
     ResizeMode::Percent,
 ];
 
-// Libellés des listes déroulantes
+const LANGUAGE_CHOICES: [LanguageChoice; 5] = [
+    LanguageChoice::System,
+    LanguageChoice::Fixed(Language::En),
+    LanguageChoice::Fixed(Language::Fr),
+    LanguageChoice::Fixed(Language::Es),
+    LanguageChoice::Fixed(Language::De),
+];
+
+// Libellés des listes déroulantes, dans la langue courante
 impl fmt::Display for FormatChoice {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(match self {
-            Self::Fixed(OutputFormat::Webp) => "WebP - Meilleur rapport qualité/taille",
-            Self::Fixed(OutputFormat::Jpg) => "JPEG - Compatible partout",
-            Self::Fixed(OutputFormat::Png) => "PNG - Sans perte avec transparence",
-            Self::Fixed(OutputFormat::Avif) => "AVIF - Format moderne haute performance",
-            Self::Original => "Format d'origine - Pour seulement redimensionner",
+        formatter.write_str(&match self {
+            Self::Fixed(OutputFormat::Webp) => t!("format-webp"),
+            Self::Fixed(OutputFormat::Jpg) => t!("format-jpg"),
+            Self::Fixed(OutputFormat::Png) => t!("format-png"),
+            Self::Fixed(OutputFormat::Avif) => t!("format-avif"),
+            Self::Original => t!("format-original"),
         })
+    }
+}
+
+/// Chaque langue s'affiche dans sa propre langue, pour qu'on la reconnaisse sans la lire ;
+/// « Système » indique la langue qu'il donne.
+impl fmt::Display for LanguageChoice {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::System => write!(
+                formatter,
+                "{} ({})",
+                t!("language-system"),
+                i18n::system_language().native_name()
+            ),
+            Self::Fixed(language) => formatter.write_str(language.native_name()),
+        }
     }
 }
 
 impl fmt::Display for ResizeMode {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(match self {
-            Self::LongestSide => "Côté le plus long",
-            Self::Width => "Largeur",
-            Self::Height => "Hauteur",
-            Self::Percent => "Pourcentage",
+        formatter.write_str(&match self {
+            Self::LongestSide => t!("resize-longest-side"),
+            Self::Width => t!("resize-width"),
+            Self::Height => t!("resize-height"),
+            Self::Percent => t!("resize-percent"),
         })
     }
 }
@@ -978,6 +1003,25 @@ mod tests {
         let reloaded = App::with_data_dir(dir.path()).settings;
         assert_eq!(reloaded.quality, 55);
         assert!(reloaded.resize_enabled);
+    }
+
+    #[test]
+    fn language_choice_applies_at_once_and_is_persisted() {
+        let (mut app, dir) = app();
+
+        let _ = app.update(Message::LanguageSelected(LanguageChoice::Fixed(
+            Language::De,
+        )));
+
+        assert_eq!(i18n::current(), Language::De);
+        assert_eq!(
+            FormatChoice::Original.to_string(),
+            "Originalformat - Nur zum Skalieren"
+        );
+        assert_eq!(
+            App::with_data_dir(dir.path()).preferences.language,
+            LanguageChoice::Fixed(Language::De)
+        );
     }
 
     #[test]

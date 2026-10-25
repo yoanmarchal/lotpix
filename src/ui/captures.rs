@@ -189,8 +189,7 @@ fn renders_every_screen_in_light_and_dark() {
         app.images[2].status = Status::Pending;
         app.settings.resize_enabled = true;
         app.settings.output_dir = Some(PathBuf::from(format!("{SAMPLE_DIR}/converted")));
-        app.notice =
-            Some("2 fichiers ignorés : format non pris en charge ou fichier illisible".to_owned());
+        app.notice = Some(t!("notice-ignored-files", count = 2));
         capture(&app, &format!("2-liste-{suffix}"));
 
         app.settings.resize_value = String::new();
@@ -217,6 +216,33 @@ fn renders_every_screen_in_light_and_dark() {
         app.tab = Tab::Convert;
         app.available_update = Version::parse("2.1.0");
         capture(&app, &format!("8-mise-a-jour-{suffix}"));
+    }
+}
+
+/// Les textes changent de longueur d'une langue à l'autre : les écrans les plus chargés sont
+/// rendus dans chaque langue pour repérer un texte coupé ou qui déborde.
+#[test]
+fn renders_the_busiest_screens_in_every_language() {
+    for language in Language::ALL {
+        i18n::set_language(language);
+        let code = language.code();
+        let (mut app, _dir) = app(false);
+        app.images = sample_images();
+        app.settings.resize_enabled = true;
+        app.notice = Some(t!("notice-ignored-files", count = 2));
+        capture(&app, &format!("9-langue-{code}-liste"));
+
+        app.notice = None;
+        app.is_converting = true;
+        app.batch = (2, 5);
+        app.available_update = Version::parse("2.1.0");
+        capture(&app, &format!("9-langue-{code}-conversion"));
+
+        app.is_converting = false;
+        app.tab = Tab::History;
+        fill_history(&mut app);
+        app.is_confirming_clear = true;
+        capture(&app, &format!("9-langue-{code}-historique"));
     }
 }
 
