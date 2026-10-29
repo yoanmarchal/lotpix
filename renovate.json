@@ -6,6 +6,7 @@
   ],
   "platformAutomerge": false,
   "automergeType": "pr",
+  "rebaseWhen": "conflicted",
   "packageRules": [
     {
       "description": "Merge automatique quand toute la CI est verte : mineures, patchs, épinglages, digests et maintenance du lock",
