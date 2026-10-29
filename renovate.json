@@ -4,7 +4,19 @@
     "config:recommended",
     "config:best-practices"
   ],
+  "platformAutomerge": false,
+  "automergeType": "pr",
   "packageRules": [
+    {
+      "description": "Merge automatique quand toute la CI est verte : mineures, patchs, épinglages, digests et maintenance du lock",
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest", "lockFileMaintenance"],
+      "automerge": true
+    },
+    {
+      "description": "Les majeures restent à valider à la main",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
     {
       "description": "Cargo.lock fige déjà les versions : pas d'épinglage exact des dev-dependencies",
       "matchManagers": ["cargo"],
@@ -15,7 +27,8 @@
       "description": "À ne monter qu'avec la crate qui les embarque (webp pour libwebp-sys, image pour moxcms), sinon deux versions cohabitent dans le binaire",
       "matchManagers": ["cargo"],
       "matchPackageNames": ["libwebp-sys", "moxcms"],
-      "dependencyDashboardApproval": true
+      "dependencyDashboardApproval": true,
+      "automerge": false
     }
   ]
 }
