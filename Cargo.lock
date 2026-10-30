@@ -2361,9 +2361,9 @@ checksum = "7f66e8d5d03f609abc3a39e6f08e4164ebf1447a732906d39eb9b99b7919ef39"
 
 [[package]]
 name = "lucide-icons"
-version = "1.64.0"
+version = "1.65.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f825dd77f40550ace525dc59236ef675d297d03544243cbcec863c233e9ccb0f"
+checksum = "328eb553849e3a9d25e7efc2e04c4abcb85080d4996a2a90ebb565d6f50e5c51"
 dependencies = [
  "iced",
 ]
