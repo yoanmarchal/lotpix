@@ -2321,7 +2321,7 @@ dependencies = [
 
 [[package]]
 name = "lotpix"
-version = "2.0.21"
+version = "2.0.22"
 dependencies = [
  "chrono",
  "directories",
