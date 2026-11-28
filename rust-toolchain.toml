@@ -1,5 +1,5 @@
 # Même compilateur partout (CI, release, local) : sinon chaque mise à jour des runners invalide le cache
 [toolchain]
-channel = "1.100.0"
+channel = "1.100.1"
 components = ["clippy", "rustfmt"]
 profile = "minimal"
